@@ -1,0 +1,81 @@
+/*
+ * Global base styles. Design tokens (--kart-*) come from the `design-system`
+ * package (node_modules/design-system/src/styles/tokens/*.css, wired in
+ * angular.json's "styles" array) — no color/spacing/typography value is
+ * hardcoded here or in any shared/ui component; everything reads a token.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background-color: var(--kart-color-background);
+  color: var(--kart-color-text);
+  font-family: var(--kart-font-family-base);
+  font-size: var(--kart-font-size-body);
+  line-height: var(--kart-line-height-body);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--kart-font-family-display);
+  line-height: var(--kart-line-height-heading);
+  margin: 0 0 var(--kart-spacing-md);
+}
+
+a {
+  color: var(--kart-color-primary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--kart-color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Applied via the shared/ui KartInput directive (input[kartInput]/select[kartInput]). */
+.kart-input {
+  width: 100%;
+  padding: var(--kart-spacing-sm);
+  border-radius: var(--kart-radius-sm);
+  border: 1px solid var(--kart-color-border);
+  background-color: var(--kart-color-background);
+  color: var(--kart-color-text);
+  font-family: var(--kart-font-family-base);
+  font-size: var(--kart-font-size-body);
+}
+
+.kart-input:disabled {
+  background-color: var(--kart-color-disabled);
+  color: var(--kart-color-disabled-text);
+}
+
+.kart-input.ng-invalid.ng-touched {
+  border-color: var(--kart-color-danger);
+}
+
+/* Shared layout for the account/auth feature's standalone page components. */
+.kart-auth-page {
+  max-width: 400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-md);
+}
+
+.kart-auth-page form {
+  display: flex;
+  flex-direction: column;
+}
+

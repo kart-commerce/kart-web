@@ -1,0 +1,25 @@
+.kart-header {
+  display: flex;
+  align-items: center;
+  gap: var(--kart-spacing-lg);
+  padding: var(--kart-spacing-md);
+  border-bottom: 1px solid var(--kart-color-border);
+}
+
+.kart-header__logo {
+  font-family: var(--kart-font-family-display);
+  font-size: var(--kart-font-size-heading-3);
+  font-weight: var(--kart-font-weight-bold);
+  color: var(--kart-color-text);
+  text-decoration: none;
+}
+
+.kart-header__account {
+  margin-left: auto;
+  display: flex;
+  gap: var(--kart-spacing-sm);
+}
+
+main {
+  padding: var(--kart-spacing-lg);
+}

@@ -1,0 +1,17 @@
+<nav class="kart-category-nav" aria-label="Category navigation">
+  @if (loadFailed()) {
+    <p class="kart-category-nav__error">Categories are unavailable right now.</p>
+  } @else if (tree(); as categories) {
+    @if (categories.length === 0) {
+      <p class="kart-category-nav__empty">No categories yet.</p>
+    } @else {
+      <ul class="kart-category-nav__list">
+        @for (category of categories; track category.categoryId) {
+          <kart-category-nav-item [node]="category" />
+        }
+      </ul>
+    }
+  } @else {
+    <kart-spinner label="Loading categories" />
+  }
+</nav>

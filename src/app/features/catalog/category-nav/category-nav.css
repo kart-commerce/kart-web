@@ -1,0 +1,15 @@
+.kart-category-nav__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kart-spacing-md);
+}
+
+.kart-category-nav__error,
+.kart-category-nav__empty {
+  color: var(--kart-color-text-muted);
+  font-size: var(--kart-font-size-caption);
+  margin: 0;
+}

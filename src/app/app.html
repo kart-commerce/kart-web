@@ -1,0 +1,18 @@
+<header class="kart-header">
+  <a class="kart-header__logo" routerLink="/">kart</a>
+
+  <kart-category-nav />
+
+  <div class="kart-header__account">
+    @if (authService.session()?.authenticated) {
+      <button type="button" (click)="logout()">Log out</button>
+    } @else {
+      <a routerLink="/account/login">Log in</a>
+      <a routerLink="/account/register">Sign up</a>
+    }
+  </div>
+</header>
+
+<main>
+  <router-outlet />
+</main>

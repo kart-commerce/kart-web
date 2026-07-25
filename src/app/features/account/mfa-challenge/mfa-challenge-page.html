@@ -1,0 +1,25 @@
+<section class="kart-auth-page">
+  <h1>Enter your verification code</h1>
+  <p>Enter the 6-digit code from your authenticator app.</p>
+
+  @if (errorMessage(); as message) {
+    <kart-alert variant="danger">{{ message }}</kart-alert>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <kart-form-field label="Verification code" inputId="mfa-code">
+      <input
+        kartInput
+        id="mfa-code"
+        type="text"
+        inputmode="numeric"
+        formControlName="totpCode"
+        autocomplete="one-time-code"
+        maxlength="6"
+        required
+      />
+    </kart-form-field>
+
+    <kart-button type="submit" [loading]="submitting()">Verify</kart-button>
+  </form>
+</section>

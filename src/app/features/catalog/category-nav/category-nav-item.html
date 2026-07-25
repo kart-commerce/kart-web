@@ -1,0 +1,23 @@
+<li class="kart-category-nav-item">
+  <div class="kart-category-nav-item__row">
+    <a class="kart-category-nav-item__link" [routerLink]="['/c', node().categoryId]">{{ node().name }}</a>
+    @if (node().children.length) {
+      <button
+        type="button"
+        class="kart-category-nav-item__toggle"
+        [attr.aria-expanded]="expanded()"
+        [attr.aria-label]="(expanded() ? 'Collapse ' : 'Expand ') + node().name"
+        (click)="toggle()"
+      >
+        {{ expanded() ? '−' : '+' }}
+      </button>
+    }
+  </div>
+  @if (node().children.length && expanded()) {
+    <ul class="kart-category-nav-item__children">
+      @for (child of node().children; track child.categoryId) {
+        <kart-category-nav-item [node]="child" />
+      }
+    </ul>
+  }
+</li>

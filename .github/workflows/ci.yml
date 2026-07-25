@@ -1,0 +1,27 @@
+name: CI
+
+# Calls kart-devops's reusable workflows rather than hardcoding CI steps
+# (kart-conventions.md: hardcoding per-service CI guarantees drift across
+# repos) — the same pattern every kart-<name>-service repo uses.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  app:
+    name: Lint, test, build (Angular App CI)
+    uses: kart-commerce/kart-devops/.github/workflows/angular-app-ci.yml@main
+    with:
+      node-version: '22.x'
+      working-directory: .
+      run-docker-build: true
+
+  category-client-codegen:
+    name: Verify generated category-service client is up to date
+    uses: kart-commerce/kart-devops/.github/workflows/openapi-client-codegen.yml@main
+    with:
+      contract-path: contracts/kart-category-service.api-contract.yaml
+      output-dir: src/app/core/http/generated/category/v1
+      fail-on-diff: true
