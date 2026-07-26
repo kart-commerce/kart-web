@@ -1,0 +1,6 @@
+<a class="kart-cart-indicator" routerLink="/cart" aria-label="View cart">
+  <span aria-hidden="true">🛒</span>
+  @if (cartService.itemCount() > 0) {
+    <span class="kart-cart-indicator__count">{{ cartService.itemCount() }}</span>
+  }
+</a>

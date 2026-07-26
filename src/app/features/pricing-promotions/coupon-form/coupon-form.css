@@ -1,0 +1,53 @@
+.kart-coupon-form__row {
+  display: flex;
+  gap: var(--kart-spacing-sm);
+}
+
+.kart-coupon-form__row input {
+  flex: 1;
+}
+
+.kart-coupon-form__apply {
+  padding: 0 var(--kart-spacing-md);
+  border-radius: var(--kart-radius-md);
+  border: 1px solid var(--kart-color-border);
+  background-color: var(--kart-color-surface);
+  color: var(--kart-color-text);
+  font-weight: var(--kart-font-weight-medium);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.kart-coupon-form__apply:disabled {
+  cursor: not-allowed;
+  color: var(--kart-color-disabled-text);
+}
+
+.kart-coupon-form__applied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kart-spacing-sm);
+  padding: var(--kart-spacing-sm) var(--kart-spacing-md);
+  border-radius: var(--kart-radius-md);
+  background-color: var(--kart-palette-success-100);
+  color: var(--kart-palette-success-600);
+}
+
+.kart-coupon-form__remove {
+  border: none;
+  background: none;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.kart-coupon-form__message {
+  margin: var(--kart-spacing-xs) 0 0;
+  font-size: var(--kart-font-size-caption);
+  color: var(--kart-color-text-muted);
+}
+
+.kart-coupon-form__message--error {
+  color: var(--kart-color-danger);
+}

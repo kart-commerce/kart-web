@@ -1,0 +1,73 @@
+@if (order(); as order) {
+  <article class="kart-order-detail">
+    @if (order.status === 'confirmed') {
+      <kart-card class="kart-order-detail__confirmation">
+        <h1>Thanks for your order!</h1>
+        <p>We've sent a confirmation to your email. Your order number is <strong>{{ formatOrderNumber(order.orderId) }}</strong>.</p>
+      </kart-card>
+    } @else {
+      <div class="kart-order-detail__heading">
+        <h1>Order {{ formatOrderNumber(order.orderId) }}</h1>
+        <kart-badge variant="primary">{{ statusLabels[order.status] }}</kart-badge>
+      </div>
+    }
+
+    <kart-card class="kart-order-detail__timeline">
+      <h2>Tracking</h2>
+      <p class="kart-order-detail__tracking-id">
+        Placed {{ order.placedAt | date: 'medium' }} · Tracking ID: {{ order.trackingId }}
+      </p>
+      <ol class="kart-order-detail__steps">
+        @for (status of statusSequence; track status) {
+          <li class="kart-order-detail__step" [class.kart-order-detail__step--reached]="isReached(status, order.status)">
+            <span class="kart-order-detail__step-dot" aria-hidden="true"></span>
+            <span>{{ statusLabels[status] }}</span>
+          </li>
+        }
+      </ol>
+    </kart-card>
+
+    <kart-card class="kart-order-detail__items">
+      <h2>Items</h2>
+      <ul class="kart-order-detail__item-list">
+        @for (item of order.items; track item.sku) {
+          <li>
+            <img [src]="item.thumbnailUrl" [alt]="item.name" width="56" height="56" />
+            <span class="kart-order-detail__item-name">{{ item.name }} &times; {{ item.quantity }}</span>
+            <span>{{ lineTotal(item) | kartMoney }}</span>
+          </li>
+        }
+      </ul>
+
+      <dl class="kart-order-detail__totals">
+        <div class="kart-order-detail__totals-row">
+          <dt>Subtotal</dt>
+          <dd>{{ order.subtotal | kartMoney }}</dd>
+        </div>
+        @if (order.discount.amount > 0) {
+          <div class="kart-order-detail__totals-row">
+            <dt>Discount</dt>
+            <dd>-{{ order.discount | kartMoney }}</dd>
+          </div>
+        }
+        <div class="kart-order-detail__totals-row kart-order-detail__totals-row--total">
+          <dt>Total</dt>
+          <dd>{{ order.total | kartMoney }}</dd>
+        </div>
+      </dl>
+    </kart-card>
+
+    <kart-card class="kart-order-detail__address">
+      <h2>Shipping to</h2>
+      <p>
+        {{ order.shippingAddress.fullName }}<br />
+        {{ order.shippingAddress.line1 }}<br />
+        {{ order.shippingAddress.city }}, {{ order.shippingAddress.state }} {{ order.shippingAddress.postalCode }}
+      </p>
+    </kart-card>
+
+    <a class="kart-order-detail__back" routerLink="/orders">View order history</a>
+  </article>
+} @else {
+  <kart-spinner label="Loading order" />
+}

@@ -1,0 +1,28 @@
+<section class="kart-home-hero">
+  <div class="kart-home-hero__content">
+    <h1>Everything you need, delivered fast.</h1>
+    <p>Shop electronics, fashion, home essentials, and more — all in one place.</p>
+    <a class="kart-button kart-button--primary kart-home-hero__cta" routerLink="/c/electronics">Start shopping</a>
+  </div>
+</section>
+
+<section class="kart-home-section">
+  <h2>Shop by category</h2>
+  <div class="kart-home-categories">
+    @for (category of featuredCategories; track category.categoryId) {
+      <a class="kart-home-category" [routerLink]="['/c', category.categoryId]">
+        <span class="kart-home-category__icon" aria-hidden="true">{{ category.icon }}</span>
+        <span>{{ category.label }}</span>
+      </a>
+    }
+  </div>
+</section>
+
+<section class="kart-home-section">
+  <h2>Trending now</h2>
+  <div class="kart-home-grid">
+    @for (product of featuredProducts(); track product.sku) {
+      <kart-product-card [product]="product" />
+    }
+  </div>
+</section>

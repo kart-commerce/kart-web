@@ -1,0 +1,33 @@
+.kart-wishlist-indicator {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  font-size: 1.2rem;
+  text-decoration: none;
+  color: var(--kart-color-text);
+  border-radius: var(--kart-radius-md);
+}
+
+.kart-wishlist-indicator:hover {
+  background-color: var(--kart-color-surface);
+}
+
+.kart-wishlist-indicator__count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: var(--kart-radius-pill);
+  background-color: var(--kart-color-danger);
+  color: var(--kart-palette-base-white);
+  font-size: 10px;
+  font-weight: var(--kart-font-weight-bold);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

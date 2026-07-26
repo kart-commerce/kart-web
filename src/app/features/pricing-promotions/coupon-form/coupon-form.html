@@ -1,0 +1,25 @@
+<div class="kart-coupon-form">
+  @if (cartService.appliedCoupon(); as coupon) {
+    <div class="kart-coupon-form__applied">
+      <span>Coupon <strong>{{ coupon.code }}</strong> applied</span>
+      <button type="button" class="kart-coupon-form__remove" (click)="remove()">Remove</button>
+    </div>
+  } @else {
+    <form class="kart-coupon-form__row" (submit)="$event.preventDefault(); apply()">
+      <input
+        kartInput
+        type="text"
+        placeholder="Coupon code"
+        [value]="code()"
+        (input)="code.set($any($event.target).value)"
+        aria-label="Coupon code"
+      />
+      <button type="submit" class="kart-coupon-form__apply" [disabled]="checking() || !code()">
+        {{ checking() ? 'Checking…' : 'Apply' }}
+      </button>
+    </form>
+  }
+  @if (message(); as msg) {
+    <p class="kart-coupon-form__message" [class.kart-coupon-form__message--error]="!cartService.appliedCoupon()">{{ msg }}</p>
+  }
+</div>

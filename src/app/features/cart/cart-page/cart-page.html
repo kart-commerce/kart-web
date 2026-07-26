@@ -1,0 +1,68 @@
+<section class="kart-cart-page">
+  <h1>Your cart</h1>
+
+  @if (cartService.cartItems().length === 0) {
+    <kart-card class="kart-cart-page__empty">
+      <p>Your cart is empty.</p>
+      <a routerLink="/">Continue shopping</a>
+    </kart-card>
+  } @else {
+    <div class="kart-cart-page__layout">
+      <ul class="kart-cart-page__lines">
+        @for (item of cartService.cartItems(); track item.sku) {
+          <li class="kart-cart-page__line">
+            <img [src]="item.thumbnailUrl" [alt]="item.name" width="80" height="80" />
+            <div class="kart-cart-page__line-info">
+              <p class="kart-cart-page__line-name">{{ item.name }}</p>
+              <p class="kart-cart-page__line-price">{{ item.unitPrice | kartMoney }} each</p>
+
+              <div class="kart-cart-page__line-actions">
+                <div class="kart-cart-page__stepper">
+                  <button type="button" (click)="decrement(item.sku, item.quantity)" aria-label="Decrease quantity">−</button>
+                  <span>{{ item.quantity }}</span>
+                  <button
+                    type="button"
+                    (click)="increment(item.sku, item.quantity, item.maxQuantity)"
+                    [disabled]="item.quantity >= item.maxQuantity"
+                    aria-label="Increase quantity"
+                  >+</button>
+                </div>
+                <button type="button" class="kart-cart-page__remove" (click)="cartService.remove(item.sku)">
+                  Remove
+                </button>
+              </div>
+            </div>
+            <p class="kart-cart-page__line-total">
+              {{ { amount: item.unitPrice.amount * item.quantity, currency: item.unitPrice.currency } | kartMoney }}
+            </p>
+          </li>
+        }
+      </ul>
+
+      <kart-card class="kart-cart-page__summary">
+        <h2>Order summary</h2>
+
+        <kart-coupon-form />
+
+        <dl class="kart-cart-page__totals">
+          <div class="kart-cart-page__totals-row">
+            <dt>Subtotal</dt>
+            <dd>{{ cartService.subtotal() | kartMoney }}</dd>
+          </div>
+          @if (cartService.discount().amount > 0) {
+            <div class="kart-cart-page__totals-row kart-cart-page__totals-row--discount">
+              <dt>Discount</dt>
+              <dd>-{{ cartService.discount() | kartMoney }}</dd>
+            </div>
+          }
+          <div class="kart-cart-page__totals-row kart-cart-page__totals-row--total">
+            <dt>Total</dt>
+            <dd>{{ cartService.total() | kartMoney }}</dd>
+          </div>
+        </dl>
+
+        <a class="kart-cart-page__checkout" routerLink="/checkout">Proceed to checkout</a>
+      </kart-card>
+    </div>
+  }
+</section>

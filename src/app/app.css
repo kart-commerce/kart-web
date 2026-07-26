@@ -1,17 +1,29 @@
 .kart-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--kart-color-background);
+  border-bottom: 1px solid var(--kart-color-border);
+  box-shadow: var(--kart-shadow-level-1);
+}
+
+.kart-header__row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--kart-spacing-sm) var(--kart-spacing-lg);
-  padding: var(--kart-spacing-md);
-  border-bottom: 1px solid var(--kart-color-border);
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--kart-spacing-sm) var(--kart-spacing-lg);
+}
+
+.kart-header__row--nav {
+  padding-top: 0;
+  padding-bottom: var(--kart-spacing-sm);
 }
 
 .kart-header__logo {
-  font-family: var(--kart-font-family-display);
-  font-size: var(--kart-font-size-heading-3);
-  font-weight: var(--kart-font-weight-bold);
-  color: var(--kart-color-text);
+  display: inline-flex;
   text-decoration: none;
   white-space: nowrap;
 }
@@ -19,10 +31,60 @@
 .kart-header__account {
   margin-left: auto;
   display: flex;
-  gap: var(--kart-spacing-sm);
+  align-items: center;
+  gap: var(--kart-spacing-md);
   white-space: nowrap;
 }
 
+.kart-header__link {
+  color: var(--kart-color-text);
+  font-weight: var(--kart-font-weight-medium);
+  text-decoration: none;
+}
+
+.kart-header__link:hover {
+  color: var(--kart-color-primary);
+}
+
+.kart-header__link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--kart-color-text);
+  font-family: var(--kart-font-family-base);
+  font-size: var(--kart-font-size-body);
+  font-weight: var(--kart-font-weight-medium);
+  cursor: pointer;
+}
+
+.kart-header__link-button:hover {
+  color: var(--kart-color-primary);
+}
+
 main {
+  max-width: 1280px;
+  margin: 0 auto;
   padding: var(--kart-spacing-lg);
+  min-height: calc(100vh - 260px);
+}
+
+.kart-footer {
+  border-top: 1px solid var(--kart-color-border);
+  background-color: var(--kart-color-surface);
+  margin-top: var(--kart-spacing-xxl);
+}
+
+.kart-footer__row {
+  display: flex;
+  align-items: center;
+  gap: var(--kart-spacing-md);
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--kart-spacing-lg);
+}
+
+.kart-footer__copy {
+  color: var(--kart-color-text-muted);
+  font-size: var(--kart-font-size-caption);
+  margin: 0;
 }

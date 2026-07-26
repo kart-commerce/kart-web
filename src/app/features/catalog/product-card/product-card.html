@@ -1,0 +1,47 @@
+<a class="kart-product-card" [routerLink]="['/p', product().sku]">
+  <kart-card [padded]="false">
+    <div class="kart-product-card__media">
+      <img [src]="product().thumbnailUrl" [alt]="product().name" width="480" height="480" loading="lazy" />
+
+      <button
+        type="button"
+        class="kart-product-card__wishlist"
+        [class.kart-product-card__wishlist--active]="wishlistService.has(product().sku)"
+        [attr.aria-pressed]="wishlistService.has(product().sku)"
+        [attr.aria-label]="(wishlistService.has(product().sku) ? 'Remove ' : 'Add ') + product().name + ' to wishlist'"
+        (click)="toggleWishlist($event)"
+      >
+        {{ wishlistService.has(product().sku) ? '♥' : '♡' }}
+      </button>
+
+      @if (product().listPrice) {
+        <kart-badge variant="danger" class="kart-product-card__sale-badge">Sale</kart-badge>
+      }
+      @if (!product().inStock) {
+        <span class="kart-product-card__oos">Out of stock</span>
+      }
+    </div>
+
+    <div class="kart-product-card__body">
+      <p class="kart-product-card__brand">{{ product().brand }}</p>
+      <h3 class="kart-product-card__name">{{ product().name }}</h3>
+      <kart-rating-stars [average]="product().ratingAverage" [count]="product().ratingCount" />
+
+      <div class="kart-product-card__price-row">
+        <span class="kart-product-card__price">{{ product().price | kartMoney }}</span>
+        @if (product().listPrice) {
+          <span class="kart-product-card__list-price">{{ product().listPrice | kartMoney }}</span>
+        }
+      </div>
+
+      <button
+        type="button"
+        class="kart-product-card__add"
+        [disabled]="!product().inStock"
+        (click)="addToCart($event)"
+      >
+        {{ product().inStock ? 'Add to cart' : 'Out of stock' }}
+      </button>
+    </div>
+  </kart-card>
+</a>

@@ -3,3 +3,7 @@ export * from './alert/alert';
 export * from './spinner/spinner';
 export * from './form-field/form-field';
 export * from './kart-input.directive';
+export * from './logo/logo';
+export * from './badge/badge';
+export * from './card/card';
+export * from './rating-stars/rating-stars';
