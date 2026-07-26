@@ -1,5 +1,5 @@
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { Injectable, PLATFORM_ID, effect, inject, signal } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
 
 export type Theme = 'light' | 'dark';
 
@@ -24,13 +24,13 @@ export class ThemeService {
       return;
     }
 
-    effect(() => this.applyTheme(this.theme()));
+    this.applyTheme(this.theme());
 
     this.document.defaultView
       ?.matchMedia('(prefers-color-scheme: dark)')
       .addEventListener('change', (event) => {
         if (this.readStoredTheme() === null) {
-          this.theme.set(event.matches ? 'dark' : 'light');
+          this.updateTheme(event.matches ? 'dark' : 'light');
         }
       });
   }
@@ -40,9 +40,16 @@ export class ThemeService {
   }
 
   setTheme(theme: Theme): void {
-    this.theme.set(theme);
+    this.updateTheme(theme);
     if (this.isBrowser) {
       this.document.defaultView?.localStorage.setItem(STORAGE_KEY, theme);
+    }
+  }
+
+  private updateTheme(theme: Theme): void {
+    this.theme.set(theme);
+    if (this.isBrowser) {
+      this.applyTheme(theme);
     }
   }
 
