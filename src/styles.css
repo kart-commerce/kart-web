@@ -65,6 +65,81 @@ a {
   border-color: var(--kart-color-danger);
 }
 
+select.kart-input {
+  appearance: none;
+  padding-right: calc(var(--kart-spacing-lg) + var(--kart-spacing-sm));
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    right calc(var(--kart-spacing-md) + 0.3em) top 55%,
+    right var(--kart-spacing-md) top 55%;
+  background-size: 0.3em 0.3em;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+select.kart-input:disabled {
+  cursor: not-allowed;
+}
+
+/* Applied via the shared/ui Button component, and directly on <a> tags styled as buttons. */
+.kart-button--full-width {
+  display: flex;
+  width: 100%;
+}
+
+.kart-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--kart-spacing-xs);
+  padding: var(--kart-spacing-sm) var(--kart-spacing-md);
+  border-radius: var(--kart-radius-md);
+  border: 1px solid transparent;
+  font-family: var(--kart-font-family-base);
+  font-size: var(--kart-font-size-body);
+  font-weight: var(--kart-font-weight-medium);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color var(--kart-motion-duration-fast) var(--kart-motion-easing-standard);
+}
+
+.kart-button:disabled {
+  cursor: not-allowed;
+  background-color: var(--kart-color-disabled);
+  color: var(--kart-color-disabled-text);
+  border-color: var(--kart-color-disabled);
+}
+
+.kart-button--primary:not(:disabled) {
+  background-color: var(--kart-color-primary);
+  color: var(--kart-color-text-on-primary);
+}
+
+.kart-button--primary:not(:disabled):hover {
+  background-color: var(--kart-color-primary-hover);
+}
+
+.kart-button--secondary:not(:disabled) {
+  background-color: transparent;
+  color: var(--kart-color-secondary);
+  border-color: var(--kart-color-border);
+}
+
+.kart-button--secondary:not(:disabled):hover {
+  background-color: var(--kart-color-surface);
+}
+
+.kart-button--danger:not(:disabled) {
+  background-color: var(--kart-color-danger);
+  color: var(--kart-color-text-on-primary);
+}
+
+.kart-button--danger:not(:disabled):hover {
+  background-color: var(--kart-color-danger-hover);
+}
+
 /* Shared layout for the account/auth feature's standalone page components. */
 .kart-auth-page {
   max-width: 400px;

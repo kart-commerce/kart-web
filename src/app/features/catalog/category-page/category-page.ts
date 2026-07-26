@@ -3,7 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { combineLatest, map, switchMap } from 'rxjs';
 
-import { Spinner } from '../../../shared/ui';
+import { KartInput, Spinner } from '../../../shared/ui';
 import { ProductCard } from '../product-card/product-card';
 import { ProductService, ProductSort } from '../data/product.service';
 
@@ -17,7 +17,7 @@ function formatCategoryName(categoryId: string): string {
 /** Product listing page (PLP) for a category — J1/J3's "browse categories" step. */
 @Component({
   selector: 'kart-category-page',
-  imports: [Spinner, ProductCard],
+  imports: [Spinner, ProductCard, KartInput],
   templateUrl: './category-page.html',
   styleUrl: './category-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

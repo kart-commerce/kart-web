@@ -6,6 +6,16 @@
 .kart-search-bar {
   display: flex;
   align-items: stretch;
+  border-radius: var(--kart-radius-md);
+}
+
+.kart-search-bar:focus-within {
+  outline: 2px solid var(--kart-color-focus-ring);
+  outline-offset: 2px;
+}
+
+.kart-search-bar__input:focus-visible {
+  outline: none;
 }
 
 .kart-search-bar__input {
@@ -37,4 +47,8 @@
 
 .kart-search-bar__submit:hover {
   background-color: var(--kart-color-primary-hover);
+}
+
+.kart-search-bar__submit:focus-visible {
+  outline: none;
 }
