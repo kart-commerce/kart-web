@@ -1,0 +1,153 @@
+@if (product(); as product) {
+  <article class="kart-pdp">
+    <nav class="kart-pdp__breadcrumb" aria-label="Breadcrumb">
+      <a [routerLink]="['/c', product.categoryId]">{{ product.categoryId }}</a>
+      <span aria-hidden="true">/</span>
+      <span>{{ product.name }}</span>
+    </nav>
+
+    <div class="kart-pdp__layout">
+      <section class="kart-pdp__gallery">
+        <div class="kart-pdp__hero">
+          <img [src]="product.images[selectedImageIndex()]" [alt]="product.name" />
+        </div>
+        @if (product.images.length > 1) {
+          <div class="kart-pdp__thumbs">
+            @for (image of product.images; track $index) {
+              <button
+                type="button"
+                class="kart-pdp__thumb"
+                [class.kart-pdp__thumb--active]="$index === selectedImageIndex()"
+                (click)="selectedImageIndex.set($index)"
+              >
+                <img [src]="image" alt="" />
+              </button>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="kart-pdp__info">
+        <p class="kart-pdp__brand">{{ product.brand }}</p>
+        <h1 class="kart-pdp__name">{{ product.name }}</h1>
+
+        @if (rating(); as r) {
+          <a class="kart-pdp__rating-link" href="#reviews">
+            <kart-rating-stars [average]="r.average" [count]="r.count" />
+          </a>
+        }
+
+        <div class="kart-pdp__price-row">
+          @if (selectedVariant(); as variant) {
+            <span class="kart-pdp__price">{{ variant.price | kartMoney }}</span>
+          }
+          @if (product.listPrice) {
+            <span class="kart-pdp__list-price">{{ product.listPrice | kartMoney }}</span>
+          }
+          <kart-promo-badge [promotion]="promotion()" />
+        </div>
+
+        @for (axis of axes() | keyvalue; track axis.key) {
+          <div class="kart-pdp__axis">
+            <span class="kart-pdp__axis-label">{{ axis.key }}</span>
+            <div class="kart-pdp__axis-options">
+              @for (value of axis.value; track value) {
+                <button
+                  type="button"
+                  class="kart-pdp__axis-option"
+                  [class.kart-pdp__axis-option--selected]="selectedVariant()?.attributes?.[axis.key] === value"
+                  (click)="selectVariantValue(axis.key, value)"
+                >
+                  {{ value }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+
+        <div class="kart-pdp__quantity">
+          <span class="kart-pdp__axis-label">Quantity</span>
+          <div class="kart-pdp__quantity-controls">
+            <button type="button" (click)="changeQuantity(-1)" aria-label="Decrease quantity">−</button>
+            <span>{{ quantity() }}</span>
+            <button type="button" (click)="changeQuantity(1)" aria-label="Increase quantity">+</button>
+          </div>
+        </div>
+
+        @if (selectedVariant(); as variant) {
+          @if (!variant.inStock) {
+            <kart-badge variant="danger">Out of stock</kart-badge>
+          }
+        }
+
+        <div class="kart-pdp__actions">
+          <button
+            type="button"
+            class="kart-pdp__add"
+            [disabled]="!selectedVariant()?.inStock"
+            (click)="addToCart()"
+          >
+            {{ justAdded() ? 'Added ✓' : 'Add to cart' }}
+          </button>
+          <button
+            type="button"
+            class="kart-pdp__wishlist"
+            [class.kart-pdp__wishlist--active]="wishlistService.has(product.sku)"
+            [attr.aria-pressed]="wishlistService.has(product.sku)"
+            (click)="toggleWishlist()"
+          >
+            {{ wishlistService.has(product.sku) ? '♥ Wishlisted' : '♡ Add to wishlist' }}
+          </button>
+        </div>
+        @if (justAdded()) {
+          <button type="button" class="kart-pdp__view-cart" (click)="goToCart()">View cart</button>
+        }
+
+        <p class="kart-pdp__description">{{ product.description }}</p>
+      </section>
+    </div>
+
+    <section class="kart-pdp__reviews" id="reviews">
+      <h2>Ratings &amp; reviews</h2>
+      @if (rating(); as r) {
+        <div class="kart-pdp__rating-summary">
+          <kart-rating-stars [average]="r.average" [count]="r.count" />
+          <span>{{ r.average }} out of 5</span>
+        </div>
+      }
+
+      @if (reviews().length === 0) {
+        <p class="kart-pdp__no-reviews">No reviews yet.</p>
+      } @else {
+        <ul class="kart-pdp__review-list">
+          @for (review of reviews(); track review.reviewId) {
+            <li class="kart-pdp__review">
+              <div class="kart-pdp__review-header">
+                <kart-rating-stars [average]="review.rating" />
+                <strong>{{ review.title }}</strong>
+                @if (review.verifiedPurchase) {
+                  <kart-badge variant="success">Verified purchase</kart-badge>
+                }
+              </div>
+              <p class="kart-pdp__review-body">{{ review.body }}</p>
+              <p class="kart-pdp__review-meta">{{ review.author }} · {{ review.createdAt | date: 'mediumDate' }}</p>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    @if (related().length > 0) {
+      <section class="kart-pdp__related">
+        <h2>You might also like</h2>
+        <div class="kart-pdp__related-grid">
+          @for (item of related(); track item.sku) {
+            <kart-product-card [product]="item" />
+          }
+        </div>
+      </section>
+    }
+  </article>
+} @else {
+  <kart-spinner label="Loading product" />
+}

@@ -1,0 +1,60 @@
+<form class="kart-address-form" [formGroup]="form" (ngSubmit)="submit()">
+  <kart-form-field
+    label="Full name"
+    inputId="address-full-name"
+    [error]="form.controls.fullName.touched && form.controls.fullName.invalid ? 'Full name is required.' : null"
+  >
+    <input kartInput id="address-full-name" type="text" formControlName="fullName" autocomplete="name" />
+  </kart-form-field>
+
+  <kart-form-field
+    label="Address line 1"
+    inputId="address-line1"
+    [error]="form.controls.line1.touched && form.controls.line1.invalid ? 'Address is required.' : null"
+  >
+    <input kartInput id="address-line1" type="text" formControlName="line1" autocomplete="address-line1" />
+  </kart-form-field>
+
+  <kart-form-field label="Address line 2 (optional)" inputId="address-line2">
+    <input kartInput id="address-line2" type="text" formControlName="line2" autocomplete="address-line2" />
+  </kart-form-field>
+
+  <div class="kart-address-form__row">
+    <kart-form-field
+      label="City"
+      inputId="address-city"
+      [error]="form.controls.city.touched && form.controls.city.invalid ? 'City is required.' : null"
+    >
+      <input kartInput id="address-city" type="text" formControlName="city" autocomplete="address-level2" />
+    </kart-form-field>
+
+    <kart-form-field
+      label="State"
+      inputId="address-state"
+      [error]="form.controls.state.touched && form.controls.state.invalid ? 'State is required.' : null"
+    >
+      <input kartInput id="address-state" type="text" formControlName="state" autocomplete="address-level1" />
+    </kart-form-field>
+
+    <kart-form-field
+      label="Postal code"
+      inputId="address-postal-code"
+      [error]="form.controls.postalCode.touched && form.controls.postalCode.invalid ? 'Postal code is required.' : null"
+    >
+      <input kartInput id="address-postal-code" type="text" formControlName="postalCode" autocomplete="postal-code" />
+    </kart-form-field>
+  </div>
+
+  <kart-form-field
+    label="Phone"
+    inputId="address-phone"
+    [error]="form.controls.phone.touched && form.controls.phone.invalid ? 'Phone number is required.' : null"
+  >
+    <input kartInput id="address-phone" type="tel" formControlName="phone" autocomplete="tel" />
+  </kart-form-field>
+
+  <div class="kart-address-form__actions">
+    <kart-button type="submit">Save address</kart-button>
+    <kart-button type="button" variant="secondary" (click)="cancelled.emit()">Cancel</kart-button>
+  </div>
+</form>

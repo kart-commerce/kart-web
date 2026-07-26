@@ -17,4 +17,5 @@ export class Button {
   readonly type = input<ButtonType>('button');
   readonly disabled = input(false);
   readonly loading = input(false);
+  readonly fullWidth = input(false);
 }

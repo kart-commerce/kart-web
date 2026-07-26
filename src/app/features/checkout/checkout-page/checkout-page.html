@@ -1,0 +1,133 @@
+<section class="kart-checkout-page">
+  <h1>Checkout</h1>
+
+  @if (cartService.cartItems().length === 0) {
+    <kart-card class="kart-checkout-page__empty">
+      <p>Your cart is empty — add something before checking out.</p>
+      <a routerLink="/">Continue shopping</a>
+    </kart-card>
+  } @else {
+    <div class="kart-checkout-page__layout">
+      <div class="kart-checkout-page__forms">
+        <kart-card>
+          <h2>Shipping address</h2>
+
+          @if (addressService.addresses().length > 0) {
+            <ul class="kart-checkout-page__address-list">
+              @for (address of addressService.addresses(); track address.addressId) {
+                <li>
+                  <label class="kart-checkout-page__address-option">
+                    <input
+                      type="radio"
+                      name="shipping-address"
+                      [checked]="selectedAddressId() === address.addressId"
+                      (change)="selectAddress(address.addressId)"
+                    />
+                    <span>
+                      <strong>{{ address.fullName }}</strong><br />
+                      {{ address.line1 }}{{ address.line2 ? ', ' + address.line2 : '' }}<br />
+                      {{ address.city }}, {{ address.state }} {{ address.postalCode }}<br />
+                      {{ address.phone }}
+                    </span>
+                  </label>
+                </li>
+              }
+            </ul>
+          }
+
+          @if (addingAddress()) {
+            <kart-address-form (saved)="saveNewAddress($event)" (cancelled)="addingAddress.set(false)" />
+          } @else {
+            <kart-button variant="secondary" type="button" (click)="addingAddress.set(true)">
+              Add a new address
+            </kart-button>
+          }
+        </kart-card>
+
+        <kart-card>
+          <h2>Payment</h2>
+          <p class="kart-checkout-page__payment-note">
+            This is a demo checkout — no real card is charged.
+          </p>
+          <form [formGroup]="paymentForm" class="kart-checkout-page__payment-form">
+            <kart-form-field
+              label="Cardholder name"
+              inputId="checkout-cardholder"
+              [error]="paymentForm.controls.cardholderName.touched && paymentForm.controls.cardholderName.invalid ? 'Cardholder name is required.' : null"
+            >
+              <input kartInput id="checkout-cardholder" type="text" formControlName="cardholderName" autocomplete="cc-name" />
+            </kart-form-field>
+
+            <kart-form-field
+              label="Card number"
+              inputId="checkout-card-number"
+              [error]="paymentForm.controls.cardNumber.touched && paymentForm.controls.cardNumber.invalid ? 'Enter a valid card number.' : null"
+            >
+              <input kartInput id="checkout-card-number" type="text" inputmode="numeric" formControlName="cardNumber" autocomplete="cc-number" />
+            </kart-form-field>
+
+            <div class="kart-checkout-page__payment-row">
+              <kart-form-field
+                label="Expiry (MM/YY)"
+                inputId="checkout-expiry"
+                [error]="paymentForm.controls.expiry.touched && paymentForm.controls.expiry.invalid ? 'Use MM/YY.' : null"
+              >
+                <input kartInput id="checkout-expiry" type="text" placeholder="MM/YY" formControlName="expiry" autocomplete="cc-exp" />
+              </kart-form-field>
+
+              <kart-form-field
+                label="CVC"
+                inputId="checkout-cvc"
+                [error]="paymentForm.controls.cvc.touched && paymentForm.controls.cvc.invalid ? 'Enter a valid CVC.' : null"
+              >
+                <input kartInput id="checkout-cvc" type="text" inputmode="numeric" formControlName="cvc" autocomplete="cc-csc" />
+              </kart-form-field>
+            </div>
+          </form>
+        </kart-card>
+      </div>
+
+      <kart-card class="kart-checkout-page__summary">
+        <h2>Order summary</h2>
+        <ul class="kart-checkout-page__items">
+          @for (item of cartService.cartItems(); track item.sku) {
+            <li>
+              <span>{{ item.name }} &times; {{ item.quantity }}</span>
+              <span>{{ { amount: item.unitPrice.amount * item.quantity, currency: item.unitPrice.currency } | kartMoney }}</span>
+            </li>
+          }
+        </ul>
+
+        <dl class="kart-checkout-page__totals">
+          <div class="kart-checkout-page__totals-row">
+            <dt>Subtotal</dt>
+            <dd>{{ cartService.subtotal() | kartMoney }}</dd>
+          </div>
+          @if (cartService.discount().amount > 0) {
+            <div class="kart-checkout-page__totals-row kart-checkout-page__totals-row--discount">
+              <dt>Discount</dt>
+              <dd>-{{ cartService.discount() | kartMoney }}</dd>
+            </div>
+          }
+          <div class="kart-checkout-page__totals-row kart-checkout-page__totals-row--total">
+            <dt>Total</dt>
+            <dd>{{ cartService.total() | kartMoney }}</dd>
+          </div>
+        </dl>
+
+        @if (placementFailed()) {
+          <p class="kart-checkout-page__error">Something went wrong placing your order. Please try again.</p>
+        }
+
+        <kart-button
+          [fullWidth]="true"
+          [disabled]="!selectedAddressId()"
+          [loading]="placingOrder()"
+          (click)="placeOrder()"
+        >
+          Place order
+        </kart-button>
+      </kart-card>
+    </div>
+  }
+</section>
