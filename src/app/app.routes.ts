@@ -6,6 +6,23 @@ export const routes: Routes = [
     loadChildren: () => import('./features/account/account.routes').then((m) => m.accountRoutes),
   },
   {
+    path: 'cart',
+    loadChildren: () => import('./features/cart/cart.routes').then((m) => m.cartRoutes),
+  },
+  {
+    path: 'wishlist',
+    loadChildren: () => import('./features/wishlist/wishlist.routes').then((m) => m.wishlistRoutes),
+  },
+  {
+    path: 'checkout',
+    loadChildren: () => import('./features/checkout/checkout.routes').then((m) => m.checkoutRoutes),
+  },
+  {
+    path: 'orders',
+    loadChildren: () =>
+      import('./features/order-tracking/order-tracking.routes').then((m) => m.orderTrackingRoutes),
+  },
+  {
     path: '',
     loadChildren: () => import('./features/catalog/catalog.routes').then((m) => m.catalogRoutes),
   },

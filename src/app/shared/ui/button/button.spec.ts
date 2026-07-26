@@ -52,4 +52,9 @@ describe('Button', () => {
     fixture.detectChanges();
     expect(button.classList).toContain('kart-button--danger');
   });
+
+  it('does not apply the full-width class by default', () => {
+    const { button } = createHost();
+    expect(button.classList).not.toContain('kart-button--full-width');
+  });
 });

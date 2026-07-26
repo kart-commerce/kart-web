@@ -1,0 +1,11 @@
+.kart-search-page__count,
+.kart-search-page__empty {
+  color: var(--kart-color-text-muted);
+  margin-bottom: var(--kart-spacing-lg);
+}
+
+.kart-search-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--kart-spacing-lg);
+}

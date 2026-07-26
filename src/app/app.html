@@ -1,18 +1,39 @@
 <header class="kart-header">
-  <a class="kart-header__logo" routerLink="/">kart</a>
+  <div class="kart-header__row kart-header__row--top">
+    <a class="kart-header__logo" routerLink="/" aria-label="Kart home">
+      <kart-logo />
+    </a>
 
-  <kart-category-nav />
+    <kart-search-bar />
 
-  <div class="kart-header__account">
-    @if (authService.session()?.authenticated) {
-      <button type="button" (click)="logout()">Log out</button>
-    } @else {
-      <a routerLink="/account/login">Log in</a>
-      <a routerLink="/account/register">Sign up</a>
-    }
+    <div class="kart-header__account">
+      <kart-theme-toggle />
+      <kart-wishlist-indicator />
+      <kart-cart-indicator />
+      @if (authService.session()?.authenticated) {
+        <a class="kart-header__link" routerLink="/orders">Orders</a>
+        <button type="button" class="kart-header__link-button" (click)="logout()">Log out</button>
+      } @else {
+        <a class="kart-header__link" routerLink="/account/login">Log in</a>
+        <a class="kart-button kart-button--primary" routerLink="/account/register">Sign up</a>
+      }
+    </div>
+  </div>
+
+  <div class="kart-header__row kart-header__row--nav">
+    <kart-category-nav />
   </div>
 </header>
 
 <main>
   <router-outlet />
 </main>
+
+<kart-toast-host />
+
+<footer class="kart-footer">
+  <div class="kart-footer__row">
+    <kart-logo variant="mark" />
+    <p class="kart-footer__copy">&copy; {{ currentYear }} Kart. All rights reserved.</p>
+  </div>
+</footer>

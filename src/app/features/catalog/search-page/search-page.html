@@ -1,0 +1,20 @@
+<section class="kart-search-page">
+  <h1>Search results for &ldquo;{{ query() }}&rdquo;</h1>
+
+  @if (results(); as items) {
+    @if (items.length === 0) {
+      <p class="kart-search-page__empty">
+        No products matched &ldquo;{{ query() }}&rdquo;. Try a different search term.
+      </p>
+    } @else {
+      <p class="kart-search-page__count">{{ items.length }} result{{ items.length === 1 ? '' : 's' }}</p>
+      <div class="kart-search-page__grid">
+        @for (product of items; track product.sku) {
+          <kart-product-card [product]="product" />
+        }
+      </div>
+    }
+  } @else {
+    <kart-spinner label="Searching" />
+  }
+</section>

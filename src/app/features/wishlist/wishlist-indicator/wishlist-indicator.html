@@ -1,0 +1,6 @@
+<a class="kart-wishlist-indicator" routerLink="/wishlist" aria-label="View wishlist">
+  <span aria-hidden="true">♡</span>
+  @if (wishlistService.count() > 0) {
+    <span class="kart-wishlist-indicator__count">{{ wishlistService.count() }}</span>
+  }
+</a>

@@ -1,0 +1,16 @@
+.kart-address-form__row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--kart-spacing-md);
+}
+
+@media (max-width: 576px) {
+  .kart-address-form__row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kart-address-form__actions {
+  display: flex;
+  gap: var(--kart-spacing-sm);
+}

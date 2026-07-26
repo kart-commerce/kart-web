@@ -1,0 +1,16 @@
+<section class="kart-wishlist-page">
+  <h1>Your wishlist</h1>
+
+  @if (wishlistService.wishlistItems().length === 0) {
+    <kart-card class="kart-wishlist-page__empty">
+      <p>Your wishlist is empty. Save products you love to find them here later.</p>
+      <a routerLink="/">Browse products</a>
+    </kart-card>
+  } @else {
+    <div class="kart-wishlist-page__grid">
+      @for (product of wishlistService.wishlistItems(); track product.sku) {
+        <kart-product-card [product]="product" />
+      }
+    </div>
+  }
+</section>

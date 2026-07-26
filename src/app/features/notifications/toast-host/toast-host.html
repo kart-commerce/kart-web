@@ -1,0 +1,12 @@
+@if (notificationService.activeToasts().length > 0) {
+  <div class="kart-toast-host" role="status" aria-live="polite">
+    @for (toast of notificationService.activeToasts(); track toast.id) {
+      <kart-alert [variant]="alertVariants[toast.variant]" class="kart-toast-host__toast">
+        {{ toast.message }}
+        <button type="button" class="kart-toast-host__dismiss" (click)="notificationService.dismiss(toast.id)" aria-label="Dismiss">
+          &times;
+        </button>
+      </kart-alert>
+    }
+  </div>
+}

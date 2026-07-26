@@ -1,0 +1,10 @@
+<span class="kart-rating" [attr.aria-label]="average() + ' out of 5 stars' + (count() !== null ? ', ' + count() + ' ratings' : '')">
+  <span class="kart-rating__stars" aria-hidden="true">
+    @for (filled of stars(); track $index) {
+      <span class="kart-rating__star" [class.kart-rating__star--filled]="filled">★</span>
+    }
+  </span>
+  @if (count() !== null) {
+    <span class="kart-rating__count">({{ count() }})</span>
+  }
+</span>

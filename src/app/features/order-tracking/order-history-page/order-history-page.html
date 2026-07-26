@@ -1,0 +1,29 @@
+<section class="kart-order-history-page">
+  <h1>Order history</h1>
+
+  @if (orders().length === 0) {
+    <kart-card class="kart-order-history-page__empty">
+      <p>You haven't placed any orders yet.</p>
+      <a routerLink="/">Start shopping</a>
+    </kart-card>
+  } @else {
+    <ul class="kart-order-history-page__list">
+      @for (order of orders(); track order.orderId) {
+        <li>
+          <a class="kart-order-history-page__row" [routerLink]="['/orders', order.orderId]">
+            <kart-card>
+              <div class="kart-order-history-page__row-content">
+                <div>
+                  <p class="kart-order-history-page__order-id">Order {{ formatOrderNumber(order.orderId) }}</p>
+                  <p class="kart-order-history-page__placed-at">Placed {{ order.placedAt | date: 'mediumDate' }}</p>
+                </div>
+                <kart-badge variant="primary">{{ statusLabels[order.status] }}</kart-badge>
+                <p class="kart-order-history-page__total">{{ order.total | kartMoney }}</p>
+              </div>
+            </kart-card>
+          </a>
+        </li>
+      }
+    </ul>
+  }
+</section>

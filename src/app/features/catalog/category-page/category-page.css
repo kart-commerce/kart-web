@@ -1,0 +1,30 @@
+.kart-category-page__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kart-spacing-md);
+  margin-bottom: var(--kart-spacing-lg);
+}
+
+.kart-category-page__sort {
+  display: flex;
+  align-items: center;
+  gap: var(--kart-spacing-sm);
+  font-size: var(--kart-font-size-caption);
+  color: var(--kart-color-text-muted);
+}
+
+.kart-category-page__sort select {
+  width: auto;
+}
+
+.kart-category-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--kart-spacing-lg);
+}
+
+.kart-category-page__empty {
+  color: var(--kart-color-text-muted);
+}

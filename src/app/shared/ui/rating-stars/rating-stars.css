@@ -1,0 +1,28 @@
+:host {
+  display: inline-flex;
+}
+
+.kart-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--kart-spacing-xs);
+}
+
+.kart-rating__stars {
+  display: inline-flex;
+  font-size: var(--kart-font-size-body);
+  line-height: 1;
+}
+
+.kart-rating__star {
+  color: var(--kart-color-border);
+}
+
+.kart-rating__star--filled {
+  color: var(--kart-palette-warning-500);
+}
+
+.kart-rating__count {
+  font-size: var(--kart-font-size-caption);
+  color: var(--kart-color-text-muted);
+}
