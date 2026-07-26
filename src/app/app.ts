@@ -7,11 +7,21 @@ import { SearchBar } from './features/catalog/search-bar/search-bar';
 import { CartIndicator } from './features/cart/cart-indicator/cart-indicator';
 import { WishlistIndicator } from './features/wishlist/wishlist-indicator/wishlist-indicator';
 import { ToastHost } from './features/notifications/toast-host/toast-host';
-import { Logo } from './shared/ui';
+import { Logo, ThemeToggle } from './shared/ui';
 
 @Component({
   selector: 'kart-root',
-  imports: [RouterOutlet, RouterLink, CategoryNav, SearchBar, CartIndicator, WishlistIndicator, ToastHost, Logo],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    CategoryNav,
+    SearchBar,
+    CartIndicator,
+    WishlistIndicator,
+    ToastHost,
+    Logo,
+    ThemeToggle,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

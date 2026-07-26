@@ -38,6 +38,7 @@
             ],
             "styles": [
               "node_modules/design-system/src/styles/tokens/base.css",
+              "node_modules/design-system/src/styles/tokens/theme-light.css",
               "node_modules/design-system/src/styles/tokens/theme-dark.css",
               "src/styles.css"
             ],

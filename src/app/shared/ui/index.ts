@@ -7,3 +7,4 @@ export * from './logo/logo';
 export * from './badge/badge';
 export * from './card/card';
 export * from './rating-stars/rating-stars';
+export * from './theme-toggle/theme-toggle';
