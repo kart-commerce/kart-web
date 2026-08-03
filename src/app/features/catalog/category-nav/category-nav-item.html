@@ -1,7 +1,7 @@
 <li class="kart-category-nav-item">
   <div class="kart-category-nav-item__row">
     <a class="kart-category-nav-item__link" [routerLink]="['/c', node().categoryId]">{{ node().name }}</a>
-    @if (node().children.length) {
+    @if (canExpand()) {
       <button
         type="button"
         class="kart-category-nav-item__toggle"
@@ -13,11 +13,17 @@
       </button>
     }
   </div>
-  @if (node().children.length && expanded()) {
-    <ul class="kart-category-nav-item__children">
-      @for (child of node().children; track child.categoryId) {
-        <kart-category-nav-item [node]="child" />
+  @if (expanded()) {
+    @if (loadFailed()) {
+      <p class="kart-category-nav-item__error">Subcategories are unavailable right now.</p>
+    } @else if (children(); as childNodes) {
+      @if (childNodes.length) {
+        <ul class="kart-category-nav-item__children">
+          @for (child of childNodes; track child.categoryId) {
+            <kart-category-nav-item [node]="child" />
+          }
+        </ul>
       }
-    </ul>
+    }
   }
 </li>

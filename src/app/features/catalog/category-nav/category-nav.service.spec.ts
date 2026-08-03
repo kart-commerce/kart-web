@@ -26,85 +26,39 @@ describe('CategoryNavService', () => {
     httpMock.verify();
   });
 
-  function flushRootLevel(categories: Category[]) {
-    const [req] = httpMock.match((r) => r.url.endsWith('/categories') && !r.params.has('parentId'));
-    req?.flush(categories);
-  }
-
-  it('returns an empty tree when there are no top-level categories', () => {
+  it('loadRoot fetches only the root level in a single request', () => {
     let result: readonly CategoryTreeNode[] | undefined;
-    service.loadTree().subscribe((tree) => (result = tree));
+    service.loadRoot().subscribe((tree) => (result = tree));
 
-    flushRootLevel([]);
-
-    expect(result).toEqual([]);
-  });
-
-  it('filters out deprecated top-level categories', () => {
-    let result: readonly CategoryTreeNode[] | undefined;
-    service.loadTree().subscribe((tree) => (result = tree));
-
-    flushRootLevel([
-      category({ categoryId: 'electronics', name: 'Electronics', depth: 1, status: 'deprecated' }),
-    ]);
-
-    expect(result).toEqual([]);
-  });
-
-  it('fetches a leaf node (depth 4) without an extra child-probe request', () => {
-    let result: readonly CategoryTreeNode[] | undefined;
-    service.loadTree().subscribe((tree) => (result = tree));
-
-    flushRootLevel([category({ categoryId: 'leaf', name: 'Leaf', depth: 4 })]);
-
-    expect(result).toEqual([{ categoryId: 'leaf', name: 'Leaf', depth: 4, status: 'active', ancestorPath: [], children: [] }]);
-    httpMock.expectNone((r) => r.params.has('parentId'));
-  });
-
-  it('recursively fetches children in parallel and builds the tree', () => {
-    let result: readonly CategoryTreeNode[] | undefined;
-    service.loadTree().subscribe((tree) => (result = tree));
-
-    flushRootLevel([
-      category({ categoryId: 'electronics', name: 'Electronics', depth: 1 }),
-      category({ categoryId: 'fashion', name: 'Fashion', depth: 1 }),
-    ]);
-
-    const electronicsChildrenReq = httpMock.expectOne(
-      (r) => r.params.get('parentId') === 'electronics',
-    );
-    const fashionChildrenReq = httpMock.expectOne((r) => r.params.get('parentId') === 'fashion');
-
-    // depth 4 so this leaf doesn't trigger yet another (unflushed) child-probe request.
-    electronicsChildrenReq.flush([category({ categoryId: 'laptops', name: 'Laptops', depth: 4 })]);
-    fashionChildrenReq.flush([]);
+    const req = httpMock.expectOne((r) => r.url.endsWith('/categories') && !r.params.has('parentId'));
+    req.flush([category({ categoryId: 'electronics', name: 'Electronics', depth: 1 })]);
 
     expect(result).toEqual([
-      {
-        categoryId: 'electronics',
-        name: 'Electronics',
-        depth: 1,
-        status: 'active',
-        ancestorPath: [],
-        children: [
-          {
-            categoryId: 'laptops',
-            name: 'Laptops',
-            depth: 4,
-            status: 'active',
-            ancestorPath: [],
-            children: [],
-          },
-        ],
-      },
-      {
-        categoryId: 'fashion',
-        name: 'Fashion',
-        depth: 1,
-        status: 'active',
-        ancestorPath: [],
-        children: [],
-      },
+      { categoryId: 'electronics', name: 'Electronics', depth: 1, status: 'active', ancestorPath: [] },
     ]);
+  });
+
+  it('loadRoot filters out deprecated top-level categories', () => {
+    let result: readonly CategoryTreeNode[] | undefined;
+    service.loadRoot().subscribe((tree) => (result = tree));
+
+    httpMock
+      .expectOne((r) => r.url.endsWith('/categories') && !r.params.has('parentId'))
+      .flush([category({ categoryId: 'electronics', name: 'Electronics', depth: 1, status: 'deprecated' })]);
+
+    expect(result).toEqual([]);
+  });
+
+  it('loadChildren fetches only the requested parent in a single request, with no recursion', () => {
+    let result: readonly CategoryTreeNode[] | undefined;
+    service.loadChildren('electronics').subscribe((tree) => (result = tree));
+
+    const req = httpMock.expectOne((r) => r.params.get('parentId') === 'electronics');
+    req.flush([category({ categoryId: 'laptops', name: 'Laptops', depth: 2 })]);
+
+    expect(result).toEqual([
+      { categoryId: 'laptops', name: 'Laptops', depth: 2, status: 'active', ancestorPath: [] },
+    ]);
+    httpMock.expectNone((r) => r.params.get('parentId') === 'laptops');
   });
 });

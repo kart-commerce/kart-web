@@ -20,9 +20,25 @@ describe('CategoryNav', () => {
     httpMock.verify();
   });
 
+  function openPanel(fixture: ReturnType<typeof TestBed.createComponent<CategoryNav>>) {
+    (fixture.nativeElement.querySelector('.kart-category-nav__trigger') as HTMLButtonElement).click();
+    fixture.detectChanges();
+  }
+
+  it('renders the trigger collapsed by default, without a panel', () => {
+    const fixture = TestBed.createComponent(CategoryNav);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Categories');
+    expect(fixture.nativeElement.querySelector('.kart-category-nav__panel')).toBeNull();
+    httpMock.expectOne((r) => r.url.endsWith('/categories')).flush([]);
+  });
+
   it('shows a loading spinner before the tree resolves', () => {
     const fixture = TestBed.createComponent(CategoryNav);
     fixture.detectChanges();
+    openPanel(fixture);
+
     expect(fixture.nativeElement.querySelector('kart-spinner')).toBeTruthy();
     httpMock.expectOne((r) => r.url.endsWith('/categories')).flush([]);
   });
@@ -31,21 +47,21 @@ describe('CategoryNav', () => {
     const fixture = TestBed.createComponent(CategoryNav);
     fixture.detectChanges();
     httpMock.expectOne((r) => r.url.endsWith('/categories')).flush([]);
-    fixture.detectChanges();
+    openPanel(fixture);
 
     expect(fixture.nativeElement.textContent).toContain('No categories yet.');
   });
 
-  it('renders the top-level category names once the tree resolves', () => {
+  it('renders the top-level category names once the tree resolves, with a single request', () => {
     const fixture = TestBed.createComponent(CategoryNav);
     fixture.detectChanges();
-    // depth 4 so no further (unflushed) child-probe request is triggered.
     httpMock.expectOne((r) => r.url.endsWith('/categories')).flush([
-      { categoryId: 'electronics', name: 'Electronics', depth: 4, status: 'active', ancestorPath: [] },
+      { categoryId: 'electronics', name: 'Electronics', depth: 1, status: 'active', ancestorPath: [] },
     ]);
-    fixture.detectChanges();
+    openPanel(fixture);
 
     expect(fixture.nativeElement.textContent).toContain('Electronics');
+    httpMock.expectNone((r) => r.params.has('parentId'));
   });
 
   it('shows a graceful error message when the request fails', () => {
@@ -54,8 +70,22 @@ describe('CategoryNav', () => {
     httpMock
       .expectOne((r) => r.url.endsWith('/categories'))
       .flush(null, { status: 500, statusText: 'Server Error' });
-    fixture.detectChanges();
+    openPanel(fixture);
 
     expect(fixture.nativeElement.textContent).toContain('Categories are unavailable right now.');
+  });
+
+  it('closes the panel when clicking outside it', () => {
+    const fixture = TestBed.createComponent(CategoryNav);
+    fixture.detectChanges();
+    httpMock.expectOne((r) => r.url.endsWith('/categories')).flush([]);
+    openPanel(fixture);
+
+    expect(fixture.nativeElement.querySelector('.kart-category-nav__panel')).toBeTruthy();
+
+    document.body.click();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.kart-category-nav__panel')).toBeNull();
   });
 });

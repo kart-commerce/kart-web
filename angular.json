@@ -82,7 +82,8 @@
               "buildTarget": "kart-web:build:production"
             },
             "development": {
-              "buildTarget": "kart-web:build:development"
+              "buildTarget": "kart-web:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"
