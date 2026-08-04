@@ -7,6 +7,8 @@
 export interface SessionInfo {
   readonly authenticated: boolean;
   readonly roles: readonly string[];
+  /** Decoded server-side from the access token's `sub` claim (never the token itself) — which kart-user-service userId this session's profile/address/preferences calls address (WEB-44). */
+  readonly userId?: string;
 }
 
 export interface MfaChallenge {

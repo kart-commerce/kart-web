@@ -270,6 +270,7 @@ export const MOCK_REVIEWS: readonly Review[] = MOCK_PRODUCTS.flatMap((product, p
           : `The ${product.name} works well overall, though it took a bit of adjusting to get used to.`,
       createdAt: new Date(2026, (productIndex + index) % 12, ((productIndex * 3 + index) % 27) + 1).toISOString(),
       verifiedPurchase: index !== 1,
+      status: 'published' as const,
     };
   }),
 );

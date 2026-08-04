@@ -7,11 +7,14 @@
     <kart-search-bar />
 
     <div class="kart-header__account">
+      <kart-locale-currency-switcher />
       <kart-theme-toggle />
       <kart-wishlist-indicator />
       <kart-cart-indicator />
       @if (authService.session()?.authenticated) {
+        <kart-notification-bell />
         <a class="kart-header__link" routerLink="/orders">Orders</a>
+        <a class="kart-header__link" routerLink="/account/profile">Account</a>
         <button type="button" class="kart-header__link-button" (click)="logout()">Log out</button>
       } @else {
         <a class="kart-header__link" routerLink="/account/login">Log in</a>
@@ -30,10 +33,21 @@
 </main>
 
 <kart-toast-host />
+<kart-compare-bar />
 
 <footer class="kart-footer">
   <div class="kart-footer__row">
     <kart-logo variant="mark" />
+    <nav class="kart-footer__links" aria-label="Company">
+      <a routerLink="/about">About</a>
+      <a routerLink="/faq">FAQ</a>
+      <a routerLink="/terms">Terms</a>
+      <a routerLink="/privacy-policy">Privacy Policy</a>
+      <a routerLink="/cookie-preferences">Cookie Preferences</a>
+      <a routerLink="/help">Help</a>
+    </nav>
     <p class="kart-footer__copy">&copy; {{ currentYear }} Kart. All rights reserved.</p>
   </div>
 </footer>
+
+<kart-cookie-consent-banner />

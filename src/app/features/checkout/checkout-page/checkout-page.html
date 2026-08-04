@@ -7,84 +7,119 @@
       <a routerLink="/">Continue shopping</a>
     </kart-card>
   } @else {
+    <ol class="kart-checkout-page__stepper" aria-label="Checkout progress">
+      @for (s of steps; track s) {
+        <li
+          [class.kart-checkout-page__step--active]="step() === s"
+          [class.kart-checkout-page__step--done]="steps.indexOf(s) < steps.indexOf(step())"
+        >
+          <button type="button" (click)="goToStep(s)">{{ s }}</button>
+        </li>
+      }
+    </ol>
+
     <div class="kart-checkout-page__layout">
       <div class="kart-checkout-page__forms">
-        <kart-card>
-          <h2>Shipping address</h2>
+        @if (step() === 'address') {
+          <kart-card>
+            <h2>Shipping address</h2>
 
-          @if (addressService.addresses().length > 0) {
-            <ul class="kart-checkout-page__address-list">
-              @for (address of addressService.addresses(); track address.addressId) {
+            @if (addressService.addresses().length > 0) {
+              <ul class="kart-checkout-page__address-list">
+                @for (address of addressService.addresses(); track address.addressId) {
+                  <li>
+                    <label class="kart-checkout-page__address-option">
+                      <input
+                        type="radio"
+                        name="shipping-address"
+                        [checked]="selectedAddressId() === address.addressId"
+                        (change)="selectAddress(address.addressId)"
+                      />
+                      <span>
+                        <strong>{{ address.fullName }}</strong><br />
+                        {{ address.line1 }}{{ address.line2 ? ', ' + address.line2 : '' }}<br />
+                        {{ address.city }}, {{ address.state }} {{ address.postalCode }}<br />
+                        {{ address.phone }}
+                      </span>
+                    </label>
+                  </li>
+                }
+              </ul>
+            }
+
+            @if (addingAddress()) {
+              <kart-address-form (saved)="saveNewAddress($event)" (cancelled)="addingAddress.set(false)" />
+            } @else {
+              <kart-button variant="secondary" type="button" (click)="addingAddress.set(true)">
+                Add a new address
+              </kart-button>
+            }
+
+            <kart-button [fullWidth]="true" [disabled]="!selectedAddress()" (click)="goToStep('shipping')">
+              Continue to shipping
+            </kart-button>
+          </kart-card>
+        }
+
+        @if (step() === 'shipping') {
+          <kart-card>
+            <h2>Shipping method</h2>
+            <ul class="kart-checkout-page__shipping-list">
+              @for (method of shippingMethods; track method.id) {
                 <li>
                   <label class="kart-checkout-page__address-option">
                     <input
                       type="radio"
-                      name="shipping-address"
-                      [checked]="selectedAddressId() === address.addressId"
-                      (change)="selectAddress(address.addressId)"
+                      name="shipping-method"
+                      [checked]="selectedShippingMethodId() === method.id"
+                      (change)="selectShippingMethod(method.id)"
                     />
                     <span>
-                      <strong>{{ address.fullName }}</strong><br />
-                      {{ address.line1 }}{{ address.line2 ? ', ' + address.line2 : '' }}<br />
-                      {{ address.city }}, {{ address.state }} {{ address.postalCode }}<br />
-                      {{ address.phone }}
+                      <strong>{{ method.label }}</strong> — {{ method.etaDays }}
+                      <br />{{ method.price | kartMoney }}
                     </span>
                   </label>
                 </li>
               }
             </ul>
-          }
-
-          @if (addingAddress()) {
-            <kart-address-form (saved)="saveNewAddress($event)" (cancelled)="addingAddress.set(false)" />
-          } @else {
-            <kart-button variant="secondary" type="button" (click)="addingAddress.set(true)">
-              Add a new address
+            <kart-button [fullWidth]="true" [disabled]="!selectedShippingMethod()" (click)="goToStep('payment')">
+              Continue to payment
             </kart-button>
-          }
-        </kart-card>
+          </kart-card>
+        }
 
-        <kart-card>
-          <h2>Payment</h2>
-          <p class="kart-checkout-page__payment-note">
-            This is a demo checkout — no real card is charged.
-          </p>
-          <form [formGroup]="paymentForm" class="kart-checkout-page__payment-form">
-            <kart-form-field
-              label="Cardholder name"
-              inputId="checkout-cardholder"
-              [error]="paymentForm.controls.cardholderName.touched && paymentForm.controls.cardholderName.invalid ? 'Cardholder name is required.' : null"
-            >
-              <input kartInput id="checkout-cardholder" type="text" formControlName="cardholderName" autocomplete="cc-name" />
-            </kart-form-field>
+        @if (step() === 'payment') {
+          <kart-card>
+            <h2>Payment</h2>
+            <p class="kart-checkout-page__payment-note">
+              Card details are entered in an isolated frame — this app never sees your card number.
+            </p>
+            <kart-payment-tokenization-field
+              (tokenized)="onPaymentTokenized($event)"
+              (validityChanged)="paymentFieldValid.set($event)"
+            />
+            @if (paymentToken(); as token) {
+              <p class="kart-checkout-page__payment-confirmed">{{ token.brand }} ending in {{ token.last4 }} confirmed.</p>
+            }
+            <kart-button [fullWidth]="true" [disabled]="!paymentToken()" (click)="goToStep('review')">
+              Continue to review
+            </kart-button>
+          </kart-card>
+        }
 
-            <kart-form-field
-              label="Card number"
-              inputId="checkout-card-number"
-              [error]="paymentForm.controls.cardNumber.touched && paymentForm.controls.cardNumber.invalid ? 'Enter a valid card number.' : null"
-            >
-              <input kartInput id="checkout-card-number" type="text" inputmode="numeric" formControlName="cardNumber" autocomplete="cc-number" />
-            </kart-form-field>
-
-            <div class="kart-checkout-page__payment-row">
-              <kart-form-field
-                label="Expiry (MM/YY)"
-                inputId="checkout-expiry"
-                [error]="paymentForm.controls.expiry.touched && paymentForm.controls.expiry.invalid ? 'Use MM/YY.' : null"
-              >
-                <input kartInput id="checkout-expiry" type="text" placeholder="MM/YY" formControlName="expiry" autocomplete="cc-exp" />
-              </kart-form-field>
-
-              <kart-form-field
-                label="CVC"
-                inputId="checkout-cvc"
-                [error]="paymentForm.controls.cvc.touched && paymentForm.controls.cvc.invalid ? 'Enter a valid CVC.' : null"
-              >
-                <input kartInput id="checkout-cvc" type="text" inputmode="numeric" formControlName="cvc" autocomplete="cc-csc" />
-              </kart-form-field>
-            </div>
-          </form>
-        </kart-card>
+        @if (step() === 'review') {
+          <kart-card>
+            <h2>Review your order</h2>
+            <p>{{ selectedAddress()?.fullName }} — {{ selectedAddress()?.line1 }}</p>
+            <p>{{ selectedShippingMethod()?.label }} ({{ selectedShippingMethod()?.etaDays }})</p>
+            @if (paymentToken(); as token) {
+              <p>{{ token.brand }} ending in {{ token.last4 }}</p>
+            }
+            @if (quoting() && !quote()) {
+              <p>Getting the latest price…</p>
+            }
+          </kart-card>
+        }
       </div>
 
       <kart-card class="kart-checkout-page__summary">
@@ -98,35 +133,43 @@
           }
         </ul>
 
-        <dl class="kart-checkout-page__totals">
-          <div class="kart-checkout-page__totals-row">
-            <dt>Subtotal</dt>
-            <dd>{{ cartService.subtotal() | kartMoney }}</dd>
-          </div>
-          @if (cartService.discount().amount > 0) {
-            <div class="kart-checkout-page__totals-row kart-checkout-page__totals-row--discount">
-              <dt>Discount</dt>
-              <dd>-{{ cartService.discount() | kartMoney }}</dd>
+        @if (quote(); as q) {
+          <dl class="kart-checkout-page__totals">
+            <div class="kart-checkout-page__totals-row">
+              <dt>Subtotal</dt>
+              <dd>{{ q.subtotal | kartMoney }}</dd>
             </div>
-          }
-          <div class="kart-checkout-page__totals-row kart-checkout-page__totals-row--total">
-            <dt>Total</dt>
-            <dd>{{ cartService.total() | kartMoney }}</dd>
-          </div>
-        </dl>
+            @if (q.discount.amount > 0) {
+              <div class="kart-checkout-page__totals-row kart-checkout-page__totals-row--discount">
+                <dt>Discount</dt>
+                <dd>-{{ q.discount | kartMoney }}</dd>
+              </div>
+            }
+            <div class="kart-checkout-page__totals-row kart-checkout-page__totals-row--total">
+              <dt>Total</dt>
+              <dd>{{ q.total | kartMoney }}</dd>
+            </div>
+          </dl>
+        } @else {
+          <p>Loading price…</p>
+        }
 
-        @if (placementFailed()) {
+        @if (!onlineStatus.isOnline()) {
+          <p class="kart-checkout-page__error" role="alert">You're offline — reconnect to place your order.</p>
+        } @else if (placementFailed()) {
           <p class="kart-checkout-page__error">Something went wrong placing your order. Please try again.</p>
         }
 
-        <kart-button
-          [fullWidth]="true"
-          [disabled]="!selectedAddressId()"
-          [loading]="placingOrder()"
-          (click)="placeOrder()"
-        >
-          Place order
-        </kart-button>
+        @if (step() === 'review') {
+          @if (placingOrder()) {
+            <p class="kart-checkout-page__processing" role="status">
+              Processing your order — please don't close this page…
+            </p>
+          }
+          <kart-button [fullWidth]="true" [disabled]="!canPlaceOrder()" [loading]="placingOrder()" (click)="placeOrder()">
+            Place order
+          </kart-button>
+        }
       </kart-card>
     </div>
   }

@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 
+import { authenticatedGuard } from '../../core/auth/auth.guard';
+
 export const accountRoutes: Routes = [
   {
     path: 'register',
@@ -27,5 +29,20 @@ export const accountRoutes: Routes = [
       import('./password-reset-confirm/password-reset-confirm-page').then(
         (m) => m.PasswordResetConfirmPage,
       ),
+  },
+  {
+    path: 'profile',
+    canActivate: [authenticatedGuard],
+    loadComponent: () => import('./profile/profile-page').then((m) => m.ProfilePage),
+  },
+  {
+    path: 'security',
+    canActivate: [authenticatedGuard],
+    loadComponent: () => import('./security/security-page').then((m) => m.SecurityPage),
+  },
+  {
+    path: 'privacy',
+    canActivate: [authenticatedGuard],
+    loadComponent: () => import('./privacy/privacy-page').then((m) => m.PrivacyPage),
   },
 ];

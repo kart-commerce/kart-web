@@ -10,20 +10,30 @@
     <div class="kart-cart-page__layout">
       <ul class="kart-cart-page__lines">
         @for (item of cartService.cartItems(); track item.sku) {
-          <li class="kart-cart-page__line">
+          <li class="kart-cart-page__line" [class.kart-cart-page__line--unavailable]="!item.inStock">
             <img [src]="item.thumbnailUrl" [alt]="item.name" width="80" height="80" />
             <div class="kart-cart-page__line-info">
               <p class="kart-cart-page__line-name">{{ item.name }}</p>
               <p class="kart-cart-page__line-price">{{ item.unitPrice | kartMoney }} each</p>
+              @if (!item.inStock) {
+                <p class="kart-cart-page__line-unavailable" role="alert">
+                  No longer in stock — remove this item to check out.
+                </p>
+              }
 
               <div class="kart-cart-page__line-actions">
                 <div class="kart-cart-page__stepper">
-                  <button type="button" (click)="decrement(item.sku, item.quantity)" aria-label="Decrease quantity">−</button>
+                  <button
+                    type="button"
+                    (click)="decrement(item.sku, item.quantity)"
+                    [disabled]="!item.inStock"
+                    aria-label="Decrease quantity"
+                  >−</button>
                   <span>{{ item.quantity }}</span>
                   <button
                     type="button"
                     (click)="increment(item.sku, item.quantity, item.maxQuantity)"
-                    [disabled]="item.quantity >= item.maxQuantity"
+                    [disabled]="!item.inStock || item.quantity >= item.maxQuantity"
                     aria-label="Increase quantity"
                   >+</button>
                 </div>
@@ -61,7 +71,17 @@
           </div>
         </dl>
 
-        <a class="kart-cart-page__checkout" routerLink="/checkout">Proceed to checkout</a>
+        @if (cartService.hasUnavailableItems()) {
+          <p class="kart-cart-page__blocking-notice" role="alert">
+            Remove the out-of-stock item(s) above before checking out.
+          </p>
+        }
+        <a
+          class="kart-cart-page__checkout"
+          [class.kart-cart-page__checkout--disabled]="cartService.hasUnavailableItems()"
+          [attr.aria-disabled]="cartService.hasUnavailableItems()"
+          [routerLink]="cartService.hasUnavailableItems() ? null : '/checkout'"
+        >Proceed to checkout</a>
       </kart-card>
     </div>
   }

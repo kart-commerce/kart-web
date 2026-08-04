@@ -2,6 +2,7 @@ import { Request, Response, Router } from 'express';
 
 import { identityClient, MfaChallenge, Problem, TokenPair } from './identity-client';
 import { serializeClearedSessionCookie, serializeSessionCookie, readSessionId } from './cookie';
+import { decodeJwtSubject } from './jwt';
 import { sessionStore, StoredSession } from './session-store';
 
 /**
@@ -13,7 +14,9 @@ import { sessionStore, StoredSession } from './session-store';
 export const bffRouter = Router();
 
 function toSessionInfo(stored: StoredSession | null) {
-  return stored ? { authenticated: true, roles: stored.roles } : { authenticated: false, roles: [] };
+  return stored
+    ? { authenticated: true, roles: stored.roles, userId: stored.userId }
+    : { authenticated: false, roles: [] };
 }
 
 async function readCurrentSession(req: Request): Promise<{ sessionId: string; session: StoredSession } | null> {
@@ -30,6 +33,7 @@ async function establishSession(res: Response, tokenPair: TokenPair): Promise<vo
     accessToken: tokenPair.accessToken,
     refreshToken: tokenPair.refreshToken,
     roles: tokenPair.roles ?? [],
+    userId: decodeJwtSubject(tokenPair.accessToken),
   });
   res.setHeader('Set-Cookie', serializeSessionCookie(sessionId));
 }
@@ -108,12 +112,24 @@ bffRouter.post('/auth/refresh', async (req, res) => {
   res.json({ authenticated: true, roles });
 });
 
+/** WEB-43 "log out everywhere" — revokes this session's entire refresh-token family (identity-service's own documented `/auth/logout` behavior when `refreshToken` is supplied), so every device/tab descended from this login is invalidated, not just this one. */
 bffRouter.post('/auth/logout', async (req, res) => {
   const current = await readCurrentSession(req);
   if (current) {
     await identityClient
       .logout(current.session.accessToken, current.session.refreshToken)
       .catch(() => undefined);
+    await sessionStore.destroy(current.sessionId);
+  }
+  res.setHeader('Set-Cookie', serializeClearedSessionCookie());
+  res.status(204).end();
+});
+
+/** WEB-43 "log out this device" — ends only this BFF session; the refresh-token family (and therefore any other device/tab still holding a valid refresh token from it) is left untouched. */
+bffRouter.post('/auth/logout-this-device', async (req, res) => {
+  const current = await readCurrentSession(req);
+  if (current) {
+    await identityClient.logout(current.session.accessToken).catch(() => undefined);
     await sessionStore.destroy(current.sessionId);
   }
   res.setHeader('Set-Cookie', serializeClearedSessionCookie());

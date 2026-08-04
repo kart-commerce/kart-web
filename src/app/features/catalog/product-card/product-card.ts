@@ -3,9 +3,12 @@ import { RouterLink } from '@angular/router';
 
 import { Badge, Card, RatingStars } from '../../../shared/ui';
 import { MoneyPipe } from '../../../shared/util';
+import { OfflineQueueService } from '../../../core/offline/offline-queue.service';
+import { OnlineStatusService } from '../../../core/offline/online-status.service';
 import { CartService } from '../../cart/data/cart.service';
 import { NotificationService } from '../../notifications/data/notification.service';
 import { WishlistService } from '../../wishlist/data/wishlist.service';
+import { CompareService } from '../data/compare.service';
 import { ProductSummary } from '../data/models';
 
 /** Product tile shared by the category grid, search results, related products, and the wishlist page. */
@@ -19,9 +22,17 @@ import { ProductSummary } from '../data/models';
 export class ProductCard {
   private readonly cartService = inject(CartService);
   private readonly notificationService = inject(NotificationService);
+  private readonly onlineStatus = inject(OnlineStatusService);
+  private readonly offlineQueue = inject(OfflineQueueService);
   protected readonly wishlistService = inject(WishlistService);
+  protected readonly compareService = inject(CompareService);
 
   readonly product = input.required<ProductSummary>();
+
+  toggleCompare(event: Event): void {
+    event.preventDefault();
+    this.compareService.toggle(this.product().sku);
+  }
 
   addToCart(event: Event): void {
     event.preventDefault();
@@ -32,7 +43,13 @@ export class ProductCard {
       thumbnailUrl: product.thumbnailUrl,
       unitPrice: product.price,
       maxQuantity: 10,
+      inStock: product.inStock,
     });
+    if (!this.onlineStatus.isOnline()) {
+      // Domain/UX Invariant #3 + edge-cases.md's offline-replay resolution: the add is safe to
+      // queue, but its price/stock must be re-validated the instant connectivity returns.
+      this.offlineQueue.enqueueRecheck(product.sku);
+    }
     this.notificationService.notify(`${product.name} added to cart.`);
   }
 

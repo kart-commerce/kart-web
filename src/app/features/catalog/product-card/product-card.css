@@ -142,3 +142,12 @@
   border-color: var(--kart-color-disabled);
   color: var(--kart-color-disabled-text);
 }
+
+.kart-product-card__compare {
+  display: flex;
+  align-items: center;
+  gap: var(--kart-spacing-xs);
+  font-size: var(--kart-font-size-caption);
+  color: var(--kart-color-text-muted);
+  cursor: pointer;
+}

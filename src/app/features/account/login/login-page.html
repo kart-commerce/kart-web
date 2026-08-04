@@ -31,7 +31,10 @@
     <kart-button type="submit" [loading]="submitting()">Log in</kart-button>
   </form>
 
-  <p><a [href]="socialLoginUrl('google')">Continue with Google</a></p>
+  <div class="kart-auth-page__social">
+    <a class="kart-button kart-button--secondary" [href]="socialLoginUrl('google')">Continue with Google</a>
+    <a class="kart-button kart-button--secondary" [href]="socialLoginUrl('apple')">Continue with Apple</a>
+  </div>
 
   <p>
     <a routerLink="/account/password-reset">Forgot your password?</a>

@@ -1,3 +1,8 @@
 @if (promotion(); as promo) {
-  <kart-badge variant="danger">{{ promo.label }}</kart-badge>
+  <div class="kart-promo-badge">
+    <kart-badge variant="danger">{{ promo.label }}</kart-badge>
+    @if (countdown(); as remaining) {
+      <span class="kart-promo-badge__countdown" role="timer">{{ remaining }}</span>
+    }
+  </div>
 }

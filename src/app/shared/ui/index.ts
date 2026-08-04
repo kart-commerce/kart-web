@@ -8,3 +8,4 @@ export * from './badge/badge';
 export * from './card/card';
 export * from './rating-stars/rating-stars';
 export * from './theme-toggle/theme-toggle';
+export * from './coming-soon/coming-soon';

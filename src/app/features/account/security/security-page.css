@@ -1,0 +1,14 @@
+.kart-security-page {
+  max-width: 560px;
+}
+
+.kart-security-page__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-md);
+}
+
+.kart-security-page__actions {
+  display: flex;
+  gap: var(--kart-spacing-sm);
+}

@@ -1,0 +1,11 @@
+.kart-promo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--kart-spacing-xs);
+}
+
+.kart-promo-badge__countdown {
+  font-size: var(--kart-font-size-caption);
+  color: var(--kart-color-danger);
+  font-variant-numeric: tabular-nums;
+}

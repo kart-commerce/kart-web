@@ -1,0 +1,59 @@
+.kart-profile-page {
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-lg);
+}
+
+.kart-profile-page__subnav {
+  display: flex;
+  gap: var(--kart-spacing-md);
+  font-size: var(--kart-font-size-caption);
+}
+
+.kart-profile-page__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-sm);
+}
+
+.kart-profile-page__section h2 {
+  margin: 0;
+  font-size: var(--kart-font-size-heading-4);
+}
+
+.kart-profile-page__email,
+.kart-profile-page__hint {
+  color: var(--kart-color-text-muted);
+  font-size: var(--kart-font-size-caption);
+  margin: 0;
+}
+
+.kart-profile-page__section form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-sm);
+  max-width: 320px;
+}
+
+.kart-profile-page__notifications {
+  display: flex;
+  gap: var(--kart-spacing-md);
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.kart-profile-page__notifications label,
+.kart-profile-page__marketing {
+  display: flex;
+  align-items: center;
+  gap: var(--kart-spacing-xs);
+  font-size: var(--kart-font-size-caption);
+}
+
+.kart-profile-page__saved {
+  color: var(--kart-color-success);
+  font-size: var(--kart-font-size-caption);
+  margin: 0;
+}

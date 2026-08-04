@@ -1,0 +1,22 @@
+@if (isBrowser && consentService.bannerVisible()) {
+  <div class="kart-cookie-banner" role="dialog" aria-live="polite" aria-label="Cookie consent">
+    @if (!managingPreferences()) {
+      <div class="kart-cookie-banner__row">
+        <p class="kart-cookie-banner__copy">
+          We use cookies for essential site function, and — with your consent — for analytics and marketing.
+          See our <a routerLink="/cookie-preferences">Cookie Preferences</a> for details.
+        </p>
+        <div class="kart-cookie-banner__actions">
+          <kart-button variant="secondary" (click)="managingPreferences.set(true)">Manage Preferences</kart-button>
+          <kart-button variant="secondary" (click)="consentService.rejectNonEssential()">Reject Non-Essential</kart-button>
+          <kart-button (click)="consentService.acceptAll()">Accept All</kart-button>
+        </div>
+      </div>
+    } @else {
+      <kart-consent-categories
+        [initial]="consentService.consent()?.categories ?? { analytics: false, marketing: false, preference: false }"
+        (saved)="consentService.savePreferences($event); managingPreferences.set(false)"
+      />
+    }
+  </div>
+}

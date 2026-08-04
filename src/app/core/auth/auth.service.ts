@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, Subject, tap } from 'rxjs';
 
 import {
   LoginRequest,
@@ -28,6 +28,18 @@ export class AuthService {
 
   /** Current session state; `null` until the first `loadSession()` resolves. */
   readonly session = signal<SessionInfo | null>(null);
+
+  /**
+   * Fires exactly once per real login completing in *this* tab — register,
+   * login, or MFA verification succeeding — never for `loadSession()`
+   * merely discovering an already-authenticated session on boot, and never
+   * for another tab's login arriving over `BroadcastChannel`. A plain
+   * `Subject` rather than a signal/effect: consumers (e.g. WEB-22's
+   * guest→user cart merge) need this to fire synchronously and exactly once
+   * per transition, not on whatever cadence the effect scheduler happens to
+   * flush.
+   */
+  readonly loginCompleted$ = new Subject<void>();
 
   constructor() {
     this.broadcast.messages$.subscribe((message) => {
@@ -62,6 +74,7 @@ export class AuthService {
       tap((session) => {
         this.session.set(session);
         this.broadcast.post({ type: 'login' });
+        this.loginCompleted$.next();
       }),
     );
   }
@@ -74,8 +87,19 @@ export class AuthService {
     return this.http.post<void>('/api/bff/auth/password/reset-confirm', request);
   }
 
+  /** WEB-43 — revokes this session's entire refresh-token family: every device/tab descended from this login is invalidated, not just this one. */
   logout(): Observable<void> {
     return this.http.post<void>('/api/bff/auth/logout', {}).pipe(
+      tap(() => {
+        this.session.set(UNAUTHENTICATED_SESSION);
+        this.broadcast.post({ type: 'logout' });
+      }),
+    );
+  }
+
+  /** WEB-43 — ends only this device's session; other devices/tabs sharing this login's refresh-token family stay signed in. */
+  logoutThisDevice(): Observable<void> {
+    return this.http.post<void>('/api/bff/auth/logout-this-device', {}).pipe(
       tap(() => {
         this.session.set(UNAUTHENTICATED_SESSION);
         this.broadcast.post({ type: 'logout' });
@@ -92,6 +116,7 @@ export class AuthService {
     if (result.status === 'authenticated') {
       this.session.set(result.session);
       this.broadcast.post({ type: 'login' });
+      this.loginCompleted$.next();
     }
   }
 }

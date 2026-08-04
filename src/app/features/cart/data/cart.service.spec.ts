@@ -1,5 +1,9 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
+import { AuthService } from '../../../core/auth/auth.service';
+import { UNAUTHENTICATED_SESSION } from '../../../core/auth/models';
 import { CartService } from './cart.service';
 import { CartItem } from './models';
 
@@ -9,16 +13,20 @@ function line(overrides: Partial<CartItem> & Pick<CartItem, 'sku'>): Omit<CartIt
     thumbnailUrl: 'data:image/svg+xml;base64,',
     unitPrice: { amount: 10, currency: 'USD' },
     maxQuantity: 5,
+    inStock: true,
     ...overrides,
   };
 }
 
 describe('CartService', () => {
   let service: CartService;
+  let authService: AuthService;
 
   beforeEach(() => {
     localStorage.clear();
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    authService = TestBed.inject(AuthService);
+    authService.session.set(UNAUTHENTICATED_SESSION);
     service = TestBed.inject(CartService);
   });
 
@@ -84,5 +92,50 @@ describe('CartService', () => {
     service.removeCoupon();
 
     expect(service.appliedCoupon()).toBeNull();
+  });
+
+  it('flags hasUnavailableItems when a line is out of stock', () => {
+    service.add(line({ sku: 'A', inStock: true }));
+    expect(service.hasUnavailableItems()).toBeFalse();
+
+    service.setAvailability('A', false);
+    expect(service.hasUnavailableItems()).toBeTrue();
+  });
+
+  it('merges the guest cart into the user cart when AuthService reports a real login, then clears the guest bucket', () => {
+    service.add(line({ sku: 'A' }), 2);
+
+    authService.session.set({ authenticated: true, roles: ['customer'] });
+    authService.loginCompleted$.next();
+
+    expect(service.cartItems().length).toBe(1);
+    expect(service.cartItems()[0].sku).toBe('A');
+    expect(service.cartItems()[0].quantity).toBe(2);
+    expect(localStorage.getItem('kart-cart-guest-v1')).toBe(JSON.stringify({ items: [], coupon: null }));
+  });
+
+  it('sums quantities for a sku present in both the guest and user carts on merge, capped at maxQuantity', () => {
+    localStorage.setItem(
+      'kart-cart-user-v1',
+      JSON.stringify({ items: [{ ...line({ sku: 'A', maxQuantity: 3 }), quantity: 2 }], coupon: null }),
+    );
+    service.add(line({ sku: 'A', maxQuantity: 3 }), 2);
+
+    authService.session.set({ authenticated: true, roles: ['customer'] });
+    authService.loginCompleted$.next();
+
+    expect(service.cartItems().length).toBe(1);
+    expect(service.cartItems()[0].quantity).toBe(3);
+  });
+
+  it('does not merge on a session load that merely discovers an already-authenticated user (loadSession never emits loginCompleted$)', () => {
+    localStorage.setItem(
+      'kart-cart-guest-v1',
+      JSON.stringify({ items: [{ ...line({ sku: 'A' }), quantity: 1 }], coupon: null }),
+    );
+
+    authService.session.set({ authenticated: true, roles: ['customer'] });
+
+    expect(service.cartItems()).toEqual([]);
   });
 });

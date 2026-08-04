@@ -27,6 +27,16 @@ export class ProductService {
     return of(sortProducts(matches, sort));
   }
 
+  /** WEB-20 — brand pages: a filtered PLP view keyed on the brand facet, not a new backend service/aggregate. */
+  listByBrand(brand: string, sort: ProductSort = 'relevance'): Observable<readonly ProductSummary[]> {
+    const matches = MOCK_PRODUCTS.filter((product) => product.brand.toLowerCase() === brand.toLowerCase());
+    return of(sortProducts(matches, sort));
+  }
+
+  listBrands(): Observable<readonly string[]> {
+    return of([...new Set(MOCK_PRODUCTS.map((product) => product.brand))].sort());
+  }
+
   listRelated(sku: string): Observable<readonly ProductSummary[]> {
     const product = MOCK_PRODUCTS.find((candidate) => candidate.sku === sku);
     if (!product) {

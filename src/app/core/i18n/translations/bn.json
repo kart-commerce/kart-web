@@ -1,0 +1,7 @@
+{
+  "common.locale_switcher.label": "ভাষা",
+  "common.currency_switcher.label": "মুদ্রা",
+  "common.cart.item_count": "{count, plural, one {# টি পণ্য} other {# টি পণ্য}}",
+  "common.actions.add_to_cart": "কার্টে যোগ করুন",
+  "common.actions.view_cart": "কার্ট দেখুন"
+}

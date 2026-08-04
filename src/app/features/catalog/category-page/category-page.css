@@ -7,6 +7,12 @@
   margin-bottom: var(--kart-spacing-lg);
 }
 
+.kart-category-page__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kart-spacing-md);
+}
+
 .kart-category-page__sort {
   display: flex;
   align-items: center;

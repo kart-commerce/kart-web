@@ -1,0 +1,18 @@
+.kart-locale-currency-switcher {
+  display: flex;
+  gap: var(--kart-spacing-xs);
+}
+
+.kart-locale-currency-switcher__field select {
+  font-size: var(--kart-font-size-caption);
+  padding: 2px var(--kart-spacing-xs);
+}
+
+.kart-locale-currency-switcher__visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}

@@ -1,0 +1,68 @@
+.kart-address-book {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-md);
+}
+
+.kart-address-book__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-sm);
+}
+
+.kart-address-book__item {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--kart-spacing-md);
+  padding: var(--kart-spacing-md);
+  border: 1px solid var(--kart-color-border);
+  border-radius: var(--kart-radius-md);
+}
+
+.kart-address-book__item p {
+  margin: var(--kart-spacing-xs) 0 0;
+  color: var(--kart-color-text-muted);
+  font-size: var(--kart-font-size-caption);
+}
+
+.kart-address-book__default {
+  margin-left: var(--kart-spacing-sm);
+  color: var(--kart-color-success);
+  font-size: var(--kart-font-size-caption);
+}
+
+.kart-address-book__actions {
+  display: flex;
+  gap: var(--kart-spacing-sm);
+  align-items: flex-start;
+}
+
+.kart-address-book__actions button {
+  border: none;
+  background: none;
+  color: var(--kart-color-primary);
+  cursor: pointer;
+  font-size: var(--kart-font-size-caption);
+}
+
+.kart-address-book__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-sm);
+  max-width: 420px;
+}
+
+.kart-address-book__default-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--kart-spacing-xs);
+  font-size: var(--kart-font-size-caption);
+}
+
+.kart-address-book__form-actions {
+  display: flex;
+  gap: var(--kart-spacing-sm);
+}

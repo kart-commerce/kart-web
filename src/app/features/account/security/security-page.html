@@ -1,0 +1,20 @@
+<section class="kart-security-page">
+  <h1>Security</h1>
+
+  <kart-card class="kart-security-page__card">
+    <h2>Sessions</h2>
+    <p>
+      Signing out "everywhere" ends every device/browser currently signed in with this account —
+      use it if you think someone else has access.
+    </p>
+
+    <div class="kart-security-page__actions">
+      <kart-button variant="secondary" [loading]="loggingOutThisDevice()" (click)="logoutThisDevice()">
+        Log out this device
+      </kart-button>
+      <kart-button variant="danger" [loading]="loggingOutEverywhere()" (click)="logoutEverywhere()">
+        Log out everywhere
+      </kart-button>
+    </div>
+  </kart-card>
+</section>

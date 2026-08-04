@@ -88,3 +88,15 @@ main {
   font-size: var(--kart-font-size-caption);
   margin: 0;
 }
+
+.kart-footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kart-spacing-md);
+  flex: 1;
+  font-size: var(--kart-font-size-caption);
+}
+
+.kart-footer__links a {
+  color: var(--kart-color-text-muted);
+}

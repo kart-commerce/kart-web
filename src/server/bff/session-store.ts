@@ -12,6 +12,8 @@ export interface StoredSession {
   readonly accessToken: string;
   readonly refreshToken: string;
   readonly roles: readonly string[];
+  /** Decoded from the access token's `sub` claim at session-establishment time (see `jwt.ts`) — which kart-user-service userId this session's profile/address calls address. */
+  readonly userId?: string;
 }
 
 const SESSION_KEY_PREFIX = 'session:';

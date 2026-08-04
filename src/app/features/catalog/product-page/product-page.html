@@ -109,44 +109,27 @@
 
     <section class="kart-pdp__reviews" id="reviews">
       <h2>Ratings &amp; reviews</h2>
-      @if (rating(); as r) {
-        <div class="kart-pdp__rating-summary">
-          <kart-rating-stars [average]="r.average" [count]="r.count" />
-          <span>{{ r.average }} out of 5</span>
-        </div>
-      }
-
-      @if (reviews().length === 0) {
-        <p class="kart-pdp__no-reviews">No reviews yet.</p>
-      } @else {
-        <ul class="kart-pdp__review-list">
-          @for (review of reviews(); track review.reviewId) {
-            <li class="kart-pdp__review">
-              <div class="kart-pdp__review-header">
-                <kart-rating-stars [average]="review.rating" />
-                <strong>{{ review.title }}</strong>
-                @if (review.verifiedPurchase) {
-                  <kart-badge variant="success">Verified purchase</kart-badge>
-                }
-              </div>
-              <p class="kart-pdp__review-body">{{ review.body }}</p>
-              <p class="kart-pdp__review-meta">{{ review.author }} · {{ review.createdAt | date: 'mediumDate' }}</p>
-            </li>
-          }
-        </ul>
+      @defer (on viewport) {
+        <kart-product-reviews [sku]="product.sku" />
+      } @placeholder {
+        <p class="kart-pdp__defer-placeholder">Reviews load as you scroll…</p>
+      } @loading (minimum 200ms) {
+        <kart-spinner label="Loading reviews" />
       }
     </section>
 
-    @if (related().length > 0) {
-      <section class="kart-pdp__related">
-        <h2>You might also like</h2>
-        <div class="kart-pdp__related-grid">
-          @for (item of related(); track item.sku) {
-            <kart-product-card [product]="item" />
-          }
-        </div>
-      </section>
-    }
+    <section class="kart-pdp__related">
+      <h2>You might also like</h2>
+      @defer (on viewport) {
+        <kart-product-recommendations [sku]="product.sku" />
+      } @placeholder {
+        <p class="kart-pdp__defer-placeholder">Recommendations load as you scroll…</p>
+      } @loading (minimum 200ms) {
+        <kart-spinner label="Loading recommendations" />
+      }
+    </section>
+
+    <kart-recently-viewed-rail [excludeSku]="product.sku" />
   </article>
 } @else {
   <kart-spinner label="Loading product" />

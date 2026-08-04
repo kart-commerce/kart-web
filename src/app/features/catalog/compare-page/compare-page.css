@@ -1,0 +1,34 @@
+.kart-compare-page__table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-xs);
+  overflow-x: auto;
+}
+
+.kart-compare-page__row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(160px, 1fr);
+  gap: var(--kart-spacing-md);
+  border-bottom: 1px solid var(--kart-color-border);
+  padding: var(--kart-spacing-sm) 0;
+  align-items: center;
+}
+
+.kart-compare-page__cell--label {
+  font-weight: var(--kart-font-weight-medium);
+  color: var(--kart-color-text-muted);
+}
+
+.kart-compare-page__row--header img {
+  border-radius: var(--kart-radius-md);
+  object-fit: cover;
+}
+
+.kart-compare-page__row--header button {
+  border: none;
+  background: none;
+  color: var(--kart-color-danger);
+  cursor: pointer;
+  font-size: var(--kart-font-size-caption);
+}

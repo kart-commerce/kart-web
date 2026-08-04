@@ -8,6 +8,19 @@ import express, { NextFunction, Request, Response } from 'express';
 import { join } from 'node:path';
 
 import { bffRouter } from './server/bff/routes';
+import { gatewayProxyRouter } from './server/bff/gateway-proxy';
+
+/**
+ * WEB-4 — `KART_MOCK=1` (set by `npm run start:mock`) intercepts this process's outbound
+ * `fetch`/`http` calls with the same MSW handler set the browser worker uses (`testing/handlers.ts`).
+ * Needed because SSR's generated-client calls (category/product/search pages, seo.md's SSR
+ * tier) go straight from this Node process to `kart-api-gateway`, never through the browser —
+ * without this, `start:mock` would only cover CSR requests.
+ */
+if (process.env['KART_MOCK'] === '1') {
+  const { mockServer } = await import('./testing/server');
+  mockServer.listen({ onUnhandledRequest: 'bypass' });
+}
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -21,6 +34,7 @@ const angularApp = new AngularNodeAppEngine();
  */
 app.use(express.json());
 app.use('/api/bff', bffRouter);
+app.use('/api/bff/gateway', gatewayProxyRouter);
 
 /**
  * Single error-handling boundary for the BFF routes (kart-conventions.md's
