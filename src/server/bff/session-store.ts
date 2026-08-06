@@ -1,6 +1,8 @@
 import { randomBytes } from 'node:crypto';
 import Redis from 'ioredis';
 
+import { REDIS_LOCAL_URL } from '../../app/core/config/service-endpoints';
+
 /**
  * Server-held session record — this, not the browser cookie, is where the
  * access/refresh token pair actually lives (security.md's BFF pattern).
@@ -26,7 +28,7 @@ export class SessionStore {
   private readonly ttlSeconds: number;
 
   constructor(
-    redisUrl = process.env['REDIS_URL'] ?? 'redis://localhost:6379',
+    redisUrl = process.env['REDIS_URL'] ?? REDIS_LOCAL_URL,
     ttlSeconds = Number(process.env['SESSION_TTL_SECONDS'] ?? DEFAULT_SESSION_TTL_SECONDS),
   ) {
     this.redis = new Redis(redisUrl, { lazyConnect: true });

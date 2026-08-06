@@ -39,6 +39,9 @@ testem.log
 /typings
 __screenshots__/
 
+# Local, per-machine overrides — see .env.example
+.env
+
 # System files
 .DS_Store
 Thumbs.db

@@ -2,6 +2,7 @@ import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 
 import { APP_CONFIG, DEFAULT_APP_CONFIG } from '../config/app-config';
+import { SERVICE_ENDPOINTS } from '../config/service-endpoints';
 import { BASE_PATH as CART_BASE_PATH } from './generated/cart/v1/variables';
 import { BASE_PATH as CATEGORY_BASE_PATH } from './generated/category/v1/variables';
 import { BASE_PATH as USER_BASE_PATH } from './generated/user/v1/variables';
@@ -37,10 +38,10 @@ describe('provideGeneratedApiClients', () => {
   });
 
   it('calls the gateway directly on the server without doubling /v1 (v1-embedded contract)', () => {
-    expect(basePathFor(CART_BASE_PATH, 'server')).toBe('http://localhost:5263');
+    expect(basePathFor(CART_BASE_PATH, 'server')).toBe(SERVICE_ENDPOINTS.gateway);
   });
 
   it('calls the gateway directly on the server, appending /v1 for a contract that omits it', () => {
-    expect(basePathFor(CATEGORY_BASE_PATH, 'server')).toBe('http://localhost:5263/v1');
+    expect(basePathFor(CATEGORY_BASE_PATH, 'server')).toBe(`${SERVICE_ENDPOINTS.gateway}/v1`);
   });
 });

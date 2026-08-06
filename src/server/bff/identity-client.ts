@@ -9,7 +9,9 @@
  * via IDENTITY_SERVICE_BASE_URL when routing through kart-api-gateway or a
  * deployed environment instead.
  */
-const IDENTITY_SERVICE_BASE_URL = process.env['IDENTITY_SERVICE_BASE_URL'] ?? 'http://localhost:5200';
+import { SERVICE_ENDPOINTS } from '../../app/core/config/service-endpoints';
+
+const IDENTITY_SERVICE_BASE_URL = process.env['IDENTITY_SERVICE_BASE_URL'] ?? SERVICE_ENDPOINTS.identity;
 
 export interface TokenPair {
   readonly accessToken: string;
