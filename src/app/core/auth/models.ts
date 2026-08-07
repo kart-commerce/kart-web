@@ -9,6 +9,8 @@ export interface SessionInfo {
   readonly roles: readonly string[];
   /** Decoded server-side from the access token's `sub` claim (never the token itself) — which kart-user-service userId this session's profile/address/preferences calls address (WEB-44). */
   readonly userId?: string;
+  /** ISO timestamp the current access token expires — feeds `AccessTokenRefreshSchedulerService`'s proactive (pre-401) refresh. Never the token itself, only its expiry. Optional (rather than required-and-nullable) so the many existing `SessionInfo` fixtures across this codebase's tests don't all need updating for a field they don't care about; `AccessTokenRefreshSchedulerService` treats a missing value the same as `null` (nothing to schedule). */
+  readonly accessTokenExpiresAt?: string | null;
 }
 
 export interface MfaChallenge {

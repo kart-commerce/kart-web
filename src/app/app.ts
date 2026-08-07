@@ -2,6 +2,7 @@ import { DOCUMENT } from '@angular/common';
 import { ChangeDetectionStrategy, Component, effect, inject } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 
+import { AccessTokenRefreshSchedulerService } from './core/auth/access-token-refresh-scheduler.service';
 import { AuthService } from './core/auth/auth.service';
 import { LocaleService } from './core/i18n/locale.service';
 import { LOCALE_DIRECTION } from './core/i18n/locale';
@@ -42,6 +43,8 @@ export class App {
   protected readonly currentYear = new Date().getFullYear();
   private readonly localeService = inject(LocaleService);
   private readonly document = inject(DOCUMENT);
+  /** Constructing this singleton starts its constructor `effect()` (same pattern kart-admin-web uses) — see its own doc comment for why proactive refresh belongs here. */
+  private readonly accessTokenRefreshScheduler = inject(AccessTokenRefreshSchedulerService);
 
   constructor() {
     this.authService.loadSession().subscribe();

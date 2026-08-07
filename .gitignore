@@ -11,6 +11,14 @@
 npm-debug.log
 yarn-error.log
 
+# vitest (src/server's `test:bff`) drops a local node_modules/.vite cache next to whatever
+# --root it's given, not just at the repo root — the rule above only matches root-level.
+node_modules/
+
+# Logs (src/server/logger.ts's pino file destination)
+logs
+*.log
+
 # IDEs and editors
 .idea/
 .project

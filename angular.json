@@ -108,7 +108,10 @@
           "builder": "@angular/build:unit-test",
           "options": {
             "runner": "karma",
-            "providersFile": "src/test-providers.ts"
+            "providersFile": "src/test-providers.ts",
+            "exclude": [
+              "src/server/**"
+            ]
           }
         },
         "lint": {

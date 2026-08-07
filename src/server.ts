@@ -9,6 +9,7 @@ import { join } from 'node:path';
 
 import { bffRouter } from './server/bff/routes';
 import { gatewayProxyRouter } from './server/bff/gateway-proxy';
+import { logger } from './server/logger';
 
 /**
  * WEB-4 — `KART_MOCK=1` (set by `npm run start:mock`) intercepts this process's outbound
@@ -28,6 +29,28 @@ const app = express();
 const angularApp = new AngularNodeAppEngine();
 
 /**
+ * Express's own `trust proxy` setting — governs `req.ip` (used by `rate-limit-middleware.ts` to
+ * key login/register/refresh/password-reset throttling per caller). Defaults to `false` (trust
+ * nothing, use the literal socket address) rather than guessing a hop count, since trusting a
+ * spoofable `X-Forwarded-For` header with no reverse proxy actually in front of this process
+ * would let any caller forge their own rate-limit identity for free. Set `TRUST_PROXY` to the
+ * number of reverse-proxy hops in front of this process in any real deployment (typically `1`
+ * for a single ingress/load balancer) — Express accepts a hop count, `true`/`false`, or a CSV of
+ * trusted IPs/subnets, all supported here by passing the env value straight through.
+ */
+function resolveTrustProxySetting(value: string | undefined): boolean | number | string {
+  if (!value) {
+    return false;
+  }
+  if (value === 'true' || value === 'false') {
+    return value === 'true';
+  }
+  const hops = Number(value);
+  return Number.isFinite(hops) ? hops : value;
+}
+app.set('trust proxy', resolveTrustProxySetting(process.env['TRUST_PROXY']));
+
+/**
  * BFF auth/session core (WEB-9) — mounted ahead of the SSR catch-all so
  * `/api/bff/*` never falls through to Angular's router. This is the only
  * place the access/refresh token pair is handled; see server/bff/routes.ts.
@@ -44,7 +67,7 @@ app.use('/api/bff/gateway', gatewayProxyRouter);
  * HTML error page with a raw stack trace.
  */
 app.use('/api/bff', (error: unknown, req: Request, res: Response, _next: NextFunction) => {
-  console.error('BFF request failed', { path: req.path, error });
+  logger.error({ err: error, path: req.path }, 'BFF request failed');
   res.status(502).json({ code: 'upstream_unavailable', message: 'A dependent service is unavailable.' });
 });
 
@@ -82,7 +105,7 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
       throw error;
     }
 
-    console.log(`Node Express server listening on http://localhost:${port}`);
+    logger.info({ port }, 'kart-web server listening');
   });
 }
 

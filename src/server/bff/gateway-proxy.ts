@@ -1,10 +1,20 @@
 import { Request, Response, Router } from 'express';
 
 import { DEFAULT_APP_CONFIG } from '../../app/core/config/app-config';
+import { logger } from '../logger';
 import { readSessionId } from './cookie';
 import { sessionStore } from './session-store';
 
 const GATEWAY_BASE_URL = process.env['GATEWAY_BASE_URL'] ?? DEFAULT_APP_CONFIG.gatewayBaseUrl;
+
+/**
+ * Hard timeout on every proxied call — at this app's traffic tier, an api-gateway/backend that
+ * merely stalls rather than erroring would otherwise hold this Node process's request (and
+ * socket) open indefinitely. A generous default since this proxy fronts everything from a cheap
+ * cart read to a heavier order-placement call — tune down per-route if a tighter budget is ever
+ * needed for a specific path.
+ */
+const GATEWAY_TIMEOUT_MS = Number(process.env['GATEWAY_TIMEOUT_MS'] ?? 15_000);
 
 /**
  * Token-relay proxy for generated clients whose calls can be authenticated
@@ -59,6 +69,7 @@ gatewayProxyRouter.use(async (req: Request, res: Response) => {
       method: req.method,
       headers,
       body: hasBody ? JSON.stringify(req.body) : undefined,
+      signal: AbortSignal.timeout(GATEWAY_TIMEOUT_MS),
     });
 
     res.status(upstreamResponse.status);
@@ -77,7 +88,7 @@ gatewayProxyRouter.use(async (req: Request, res: Response) => {
     const body = await upstreamResponse.text();
     res.send(body);
   } catch (error) {
-    console.error('Gateway proxy request failed', { path: req.originalUrl, error });
+    logger.error({ err: error, path: req.originalUrl }, 'Gateway proxy request failed');
     res
       .status(502)
       .json({ code: 'upstream_unavailable', message: 'A dependent service is unavailable.' });
