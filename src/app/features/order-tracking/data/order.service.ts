@@ -1,16 +1,48 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
-import { Observable, of, throwError } from 'rxjs';
+import { Observable, catchError, map, of, throwError } from 'rxjs';
 
+import { AuthService } from '../../../core/auth/auth.service';
+import { DefaultService as OrderApi } from '../../../core/http/generated/order/v1';
+import { CreateOrderRequest } from '../../../core/http/generated/order/v1/model/createOrderRequest';
+import { OrderView } from '../../../core/http/generated/order/v1/model/orderView';
 import { Money, addMoney } from '../../../shared/util/money';
 import { Address } from '../../checkout/data/models';
 import {
   Order,
   OrderLineItem,
+  OrderStatus,
   ReturnReasonCode,
   ReturnRequestLineSelection,
   ShippingMethodSummary,
 } from './models';
+
+/** kart-order-service's own vendored OpenAPI contract predates the `gatewayToken` field. */
+interface CreateOrderRequestWithToken extends CreateOrderRequest {
+  readonly gatewayToken: string;
+}
+
+function mapRealStatus(status: OrderView.StatusEnum): OrderStatus {
+  switch (status) {
+    case 'Created':
+    case 'Reserved':
+      return 'processing';
+    case 'Paid':
+      return 'confirmed';
+    case 'Shipped':
+      return 'shipped';
+    case 'Delivered':
+      return 'delivered';
+    case 'Cancelled':
+      return 'cancelled';
+    case 'Refunded':
+      return 'refunded';
+    case 'FulfillmentException':
+      return 'fulfillment-exception';
+    default:
+      return 'processing';
+  }
+}
 
 const STORAGE_KEY = 'kart-orders-v1';
 
@@ -26,6 +58,9 @@ export interface PlaceOrderInput {
   readonly subtotal: Money;
   readonly discount: Money;
   readonly total: Money;
+  readonly currency: string;
+  /** From `PaymentTokenizationField`'s isolated-frame tokenizer — threads through to kart-order-service's `OrderCreated` payload so kart-payment-service's async charge trigger knows which payment method to charge. */
+  readonly gatewayToken: string;
 }
 
 export interface SubmitReturnRequestInput {
@@ -51,15 +86,27 @@ function generateTrackingId(): string {
 const MOCK_CARRIERS = ['Kart Express', 'Northline Logistics', 'Summit Freight'];
 
 /**
- * Stands in for kart-order-service's `POST /orders`, `GET /orders/{id}`, `POST /orders/{id}/cancel`,
- * and the new `POST /orders/{id}/return-request` (🚧, WEB-XT-1 — see feature-flags.ts) — plus a
- * mock kart-shipping-service tracking id/carrier assigned at order-confirmation/ship time.
- * `placeOrder`/`cancelOrder`/`submitReturnRequest` are all keyed by the caller-supplied
- * Idempotency-Key exactly like the real contracts require.
+ * `placeOrder` calls the real kart-order-service `POST /v1/orders` — genuinely synchronous
+ * per-line Inventory reservation happens before it returns (ORD-1). Payment then clears
+ * asynchronously (order-service's own saga), so the status this app displays right after placing
+ * an order is `processing` (real status `Created`/`Reserved`), not `confirmed` — `getById`
+ * re-fetches the real order to pick up `Paid`→`confirmed` once payment clears.
+ *
+ * kart-order-service's own `CreateOrder` contract has no `shippingMethod`/discount field — this
+ * app keeps those (plus a mock shipping tracking id, since kart-shipping-service is an empty,
+ * unscaffolded repo) in this local display cache only, seeded from what the checkout UI already
+ * computed, alongside the real, backend-verified `orderId`/`status`. A real fix (adding those
+ * fields to Order's own contract) is new-feature design work, not a gap-fill — see the flow's
+ * known-limitations note.
+ *
+ * `cancelOrder`/`submitReturnRequest` remain fully local/mocked — Order Management (Admin, flow
+ * #7) and Returns/Refunds (flow #9) are each their own dedicated build, out of scope here.
  */
 @Injectable({ providedIn: 'root' })
 export class OrderService {
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly authService = inject(AuthService);
+  private readonly orderApi = inject(OrderApi);
   private readonly idempotencyIndex = new Map<string, string>();
 
   private readonly orders = signal<readonly Order[]>(this.readFromStorage());
@@ -73,27 +120,68 @@ export class OrderService {
       }
     }
 
-    const placedAt = new Date().toISOString();
-    const order: Order = {
-      orderId: crypto.randomUUID(),
-      placedAt,
-      status: 'confirmed',
-      statusHistory: [{ status: 'confirmed', at: placedAt }],
-      items: input.items,
-      shippingAddress: input.shippingAddress,
-      shippingMethod: input.shippingMethod,
-      subtotal: input.subtotal,
-      discount: input.discount,
-      total: input.total,
-      trackingId: generateTrackingId(),
+    const userId = this.authService.session()?.userId;
+    if (!userId) {
+      // kart-order-service's CreateOrder contract requires a non-null userId — there is no
+      // anonymous/guest order path on the real backend (a real, pre-existing gap; the catalog's
+      // "Guest" checkout branch is unsupported server-side, not something fixed this session).
+      return throwError(() => new Error('Placing a real order requires an authenticated session.'));
+    }
+
+    const request: CreateOrderRequestWithToken = {
+      userId,
+      currency: input.currency,
+      gatewayToken: input.gatewayToken,
+      items: input.items.map((item) => ({ sku: item.sku, qty: item.quantity, unitPrice: item.unitPrice })),
     };
 
-    this.idempotencyIndex.set(idempotencyKey, order.orderId);
-    this.orders.update((current) => [order, ...current]);
-    this.writeToStorage(this.orders());
-    this.scheduleStatusProgression(order.orderId);
+    return this.orderApi.createOrder(idempotencyKey, request).pipe(
+      map((view: OrderView) => {
+        const placedAt = view.createdAt;
+        const order: Order = {
+          orderId: view.orderId,
+          placedAt,
+          status: mapRealStatus(view.status),
+          statusHistory: [{ status: mapRealStatus(view.status), at: placedAt }],
+          items: input.items,
+          shippingAddress: input.shippingAddress,
+          shippingMethod: input.shippingMethod,
+          subtotal: input.subtotal,
+          discount: input.discount,
+          total: input.total,
+          trackingId: generateTrackingId(),
+        };
 
-    return of(order);
+        this.idempotencyIndex.set(idempotencyKey, order.orderId);
+        this.orders.update((current) => [order, ...current]);
+        this.writeToStorage(this.orders());
+        return order;
+      }),
+    );
+  }
+
+  /** Re-fetches the real order's current status (e.g. `Paid` once payment clears) and merges it onto the local display cache. */
+  refreshStatus(orderId: string): Observable<Order | undefined> {
+    return this.orderApi.getOrder(orderId).pipe(
+      map((view) => {
+        const existing = this.orders().find((order) => order.orderId === orderId);
+        if (!existing) {
+          return undefined;
+        }
+        const status = mapRealStatus(view.status);
+        const updated: Order = {
+          ...existing,
+          status,
+          statusHistory:
+            existing.statusHistory.at(-1)?.status === status
+              ? existing.statusHistory
+              : [...existing.statusHistory, { status, at: new Date().toISOString() }],
+        };
+        this.replaceOrder(updated);
+        return updated;
+      }),
+      catchError(() => of(undefined)),
+    );
   }
 
   getById(orderId: string): Observable<Order | undefined> {

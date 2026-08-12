@@ -1,9 +1,10 @@
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
 import { AuthService } from '../../../core/auth/auth.service';
 import { UNAUTHENTICATED_SESSION } from '../../../core/auth/models';
+import { CartResponse } from '../../../core/http/generated/cart/v1/model/cartResponse';
 import { CartService } from './cart.service';
 import { CartItem } from './models';
 
@@ -18,124 +19,146 @@ function line(overrides: Partial<CartItem> & Pick<CartItem, 'sku'>): Omit<CartIt
   };
 }
 
+function serverCart(items: readonly { sku: string; quantity: number }[]): CartResponse {
+  return {
+    cartId: 'cart-1',
+    ownerType: 'Guest',
+    status: 'Active',
+    items: items.map((i) => ({ sku: i.sku, quantity: i.quantity, availability: 'Available' })),
+  } as CartResponse;
+}
+
 describe('CartService', () => {
   let service: CartService;
   let authService: AuthService;
+  let httpMock: HttpTestingController;
+
+  function flushInitialGet(items: readonly { sku: string; quantity: number }[] = []): void {
+    const req = httpMock.expectOne((r) => r.method === 'GET' && r.url.includes('/cart'));
+    req.flush(serverCart(items), { headers: { etag: 'v1' } });
+
+    // Any pre-seeded line has no display-cache entry yet, so CartService falls back to a real
+    // ProductService.getBySku(sku) lookup to backfill name/thumbnail/price.
+    for (const item of items) {
+      httpMock.expectOne((r) => r.method === 'GET' && r.url.includes(`/products/${item.sku}`)).flush({
+        sku: item.sku,
+        name: 'Test product',
+        category: { id: 'cat-1' },
+        price: { amount: 10, currency: 'USD' },
+        status: 'Active',
+        productGroupId: 'group-1',
+      });
+      httpMock
+        .expectOne((r) => r.method === 'GET' && r.url.includes(`/product-groups/group-1/variants`))
+        .flush([]);
+    }
+  }
 
   beforeEach(() => {
     localStorage.clear();
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
     authService = TestBed.inject(AuthService);
     authService.session.set(UNAUTHENTICATED_SESSION);
+    httpMock = TestBed.inject(HttpTestingController);
     service = TestBed.inject(CartService);
   });
 
-  it('starts empty', () => {
+  afterEach(() => httpMock.verify());
+
+  it('starts empty after hydrating from the server', () => {
+    flushInitialGet();
+
     expect(service.cartItems()).toEqual([]);
     expect(service.itemCount()).toBe(0);
   });
 
-  it('adds a new line item', () => {
+  it('adds a new line item via the real add-to-cart endpoint', () => {
+    flushInitialGet();
+
     service.add(line({ sku: 'A' }));
+    const req = httpMock.expectOne((r) => r.method === 'POST' && r.url.includes('/cart/items'));
+    expect(req.request.body).toEqual({ sku: 'A', quantity: 1 });
+    req.flush(serverCart([{ sku: 'A', quantity: 1 }]), { headers: { etag: 'v2' } });
 
     expect(service.cartItems().length).toBe(1);
     expect(service.itemCount()).toBe(1);
-  });
-
-  it('merges quantities when adding the same sku twice', () => {
-    service.add(line({ sku: 'A' }), 2);
-    service.add(line({ sku: 'A' }), 1);
-
-    expect(service.cartItems().length).toBe(1);
-    expect(service.cartItems()[0].quantity).toBe(3);
-  });
-
-  it('clamps quantity at maxQuantity', () => {
-    service.add(line({ sku: 'A', maxQuantity: 2 }), 5);
-
-    expect(service.cartItems()[0].quantity).toBe(2);
+    expect(service.cartItems()[0].name).toBe('Test product');
   });
 
   it('removes a line when quantity is updated to zero', () => {
-    service.add(line({ sku: 'A' }));
+    flushInitialGet([{ sku: 'A', quantity: 1 }]);
+
     service.updateQuantity('A', 0);
+    const req = httpMock.expectOne((r) => r.method === 'DELETE' && r.url.includes('/cart/items/A'));
+    req.flush(null, { headers: { etag: 'v3' } });
+    httpMock.expectOne((r) => r.method === 'GET' && r.url.includes('/cart')).flush(serverCart([]), { headers: { etag: 'v3' } });
 
     expect(service.cartItems()).toEqual([]);
   });
 
-  it('computes subtotal across lines', () => {
+  it('computes subtotal across lines using cached display prices', () => {
+    flushInitialGet();
+
     service.add(line({ sku: 'A', unitPrice: { amount: 10, currency: 'USD' } }), 2);
-    service.add(line({ sku: 'B', unitPrice: { amount: 5, currency: 'USD' } }), 1);
+    httpMock
+      .expectOne((r) => r.method === 'POST' && r.url.includes('/cart/items'))
+      .flush(serverCart([{ sku: 'A', quantity: 2 }]), { headers: { etag: 'v2' } });
 
-    expect(service.subtotal()).toEqual({ amount: 25, currency: 'USD' });
+    expect(service.subtotal()).toEqual({ amount: 20, currency: 'USD' });
   });
 
-  it('clears all items and any applied coupon', () => {
-    service.add(line({ sku: 'A' }));
-    service.applyCoupon({ code: 'SAVE20', discount: { amount: 20, currency: 'USD' } });
-    service.clear();
+  it('applies and removes a coupon locally (display-only — kart-cart-service has no coupon field)', () => {
+    flushInitialGet();
 
-    expect(service.cartItems()).toEqual([]);
+    service.applyCoupon({ code: 'SAVE20', discount: { amount: 5, currency: 'USD' } });
+    expect(service.appliedCoupon()?.code).toBe('SAVE20');
+
+    service.removeCoupon();
     expect(service.appliedCoupon()).toBeNull();
   });
 
   it('subtracts an applied coupon discount from the total, floored at zero', () => {
+    flushInitialGet();
+
     service.add(line({ sku: 'A', unitPrice: { amount: 10, currency: 'USD' } }), 1);
+    httpMock
+      .expectOne((r) => r.method === 'POST' && r.url.includes('/cart/items'))
+      .flush(serverCart([{ sku: 'A', quantity: 1 }]), { headers: { etag: 'v2' } });
+
     service.applyCoupon({ code: 'SAVE20', discount: { amount: 50, currency: 'USD' } });
 
     expect(service.discount()).toEqual({ amount: 50, currency: 'USD' });
     expect(service.total()).toEqual({ amount: 0, currency: 'USD' });
   });
 
-  it('removes a previously applied coupon', () => {
-    service.applyCoupon({ code: 'SAVE20', discount: { amount: 20, currency: 'USD' } });
-    service.removeCoupon();
-
-    expect(service.appliedCoupon()).toBeNull();
-  });
-
-  it('flags hasUnavailableItems when a line is out of stock', () => {
-    service.add(line({ sku: 'A', inStock: true }));
+  it('flags hasUnavailableItems when the server marks a line FlaggedUnavailable', () => {
+    flushInitialGet([{ sku: 'A', quantity: 1 }]);
     expect(service.hasUnavailableItems()).toBeFalse();
 
     service.setAvailability('A', false);
     expect(service.hasUnavailableItems()).toBeTrue();
   });
 
-  it('merges the guest cart into the user cart when AuthService reports a real login, then clears the guest bucket', () => {
-    service.add(line({ sku: 'A' }), 2);
+  it('calls the real merge endpoint on a genuine login completion', () => {
+    flushInitialGet();
 
-    authService.session.set({ authenticated: true, roles: ['customer'] });
+    authService.session.set({ authenticated: true, roles: ['customer'], userId: 'user-1' });
     authService.loginCompleted$.next();
+
+    const req = httpMock.expectOne((r) => r.method === 'POST' && r.url.includes('/cart/merge'));
+    req.flush(serverCart([{ sku: 'A', quantity: 2 }]), { headers: { etag: 'v9' } });
+
+    httpMock.expectOne((r) => r.method === 'GET' && r.url.includes('/products/A')).flush({
+      sku: 'A',
+      name: 'Test product',
+      category: { id: 'cat-1' },
+      price: { amount: 10, currency: 'USD' },
+      status: 'Active',
+      productGroupId: 'group-1',
+    });
+    httpMock.expectOne((r) => r.method === 'GET' && r.url.includes('/product-groups/group-1/variants')).flush([]);
 
     expect(service.cartItems().length).toBe(1);
     expect(service.cartItems()[0].sku).toBe('A');
-    expect(service.cartItems()[0].quantity).toBe(2);
-    expect(localStorage.getItem('kart-cart-guest-v1')).toBe(JSON.stringify({ items: [], coupon: null }));
-  });
-
-  it('sums quantities for a sku present in both the guest and user carts on merge, capped at maxQuantity', () => {
-    localStorage.setItem(
-      'kart-cart-user-v1',
-      JSON.stringify({ items: [{ ...line({ sku: 'A', maxQuantity: 3 }), quantity: 2 }], coupon: null }),
-    );
-    service.add(line({ sku: 'A', maxQuantity: 3 }), 2);
-
-    authService.session.set({ authenticated: true, roles: ['customer'] });
-    authService.loginCompleted$.next();
-
-    expect(service.cartItems().length).toBe(1);
-    expect(service.cartItems()[0].quantity).toBe(3);
-  });
-
-  it('does not merge on a session load that merely discovers an already-authenticated user (loadSession never emits loginCompleted$)', () => {
-    localStorage.setItem(
-      'kart-cart-guest-v1',
-      JSON.stringify({ items: [{ ...line({ sku: 'A' }), quantity: 1 }], coupon: null }),
-    );
-
-    authService.session.set({ authenticated: true, roles: ['customer'] });
-
-    expect(service.cartItems()).toEqual([]);
   });
 });

@@ -1,25 +1,59 @@
-import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 
+import { placeholderImage } from '../../../shared/util/placeholder-image';
+import { DefaultService as ProductApi } from '../../../core/http/generated/product/v1';
+import { BASE_PATH as PRODUCT_BASE_PATH } from '../../../core/http/generated/product/v1/variables';
+import { ProductResponse } from '../../../core/http/generated/product/v1/model/productResponse';
+import { DefaultService as InventoryApi } from '../../../core/http/generated/inventory/v1';
 import { Product, ProductSummary, ProductVariant } from './models';
 import { MOCK_PRODUCTS } from './mock-catalog';
 
 export type ProductSort = 'relevance' | 'price-asc' | 'price-desc' | 'rating';
 
+/** kart-product-service's own vendored OpenAPI contract predates its `productGroupId` field. */
+interface ProductResponseWithGroup extends ProductResponse {
+  readonly productGroupId: string;
+}
+
 /**
- * Stands in for kart-product-service's `GET /v1/products/{sku}` and
- * `GET /v1/product-groups/{id}/variants` until that contract is vendored into this repo — see
- * mock-catalog.ts's note. Swapping this for a generated client only touches this file.
+ * `getBySku`/`listVariants` call the real kart-product-service (`GET /v1/products/{sku}`,
+ * `GET /v1/product-groups/{id}/variants`) joined client-side with kart-inventory-service's
+ * `GET /v1/inventory/{sku}` for per-variant availability — see `models.ts`'s doc comment.
+ * `listByCategory`/`listByBrand`/`listBrands`/`listRelated`/`listFeatured` remain mocked: those
+ * back category/brand-browse pages, not the Normal Shopping & Purchase Journey's own
+ * Search→PDP→Add-to-Cart sequence, and are out of scope for this flow's build.
  */
 @Injectable({ providedIn: 'root' })
 export class ProductService {
+  private readonly productApi = inject(ProductApi);
+  private readonly inventoryApi = inject(InventoryApi);
+  private readonly http = inject(HttpClient);
+  private readonly basePath = inject(PRODUCT_BASE_PATH, { optional: true }) ?? '';
+
   getBySku(sku: string): Observable<Product | undefined> {
-    return of(MOCK_PRODUCTS.find((product) => product.sku === sku));
+    return this.productApi.getProduct(sku).pipe(
+      switchMap((primary) => {
+        const groupId = (primary as ProductResponseWithGroup).productGroupId;
+        return this.listVariants(groupId).pipe(
+          map((variants) => this.toProduct(primary as ProductResponseWithGroup, groupId, variants)),
+        );
+      }),
+      catchError(() => of(undefined)),
+    );
   }
 
   listVariants(groupId: string): Observable<readonly ProductVariant[]> {
-    const product = MOCK_PRODUCTS.find((candidate) => candidate.groupId === groupId);
-    return of(product?.variants ?? []);
+    return this.http.get<ProductResponseWithGroup[]>(`${this.basePath}/v1/product-groups/${groupId}/variants`).pipe(
+      switchMap((siblings) => {
+        if (siblings.length === 0) {
+          return of([]);
+        }
+        return forkJoin(siblings.map((sibling) => this.toVariant(sibling)));
+      }),
+      catchError(() => of([])),
+    );
   }
 
   listByCategory(categoryId: string, sort: ProductSort = 'relevance'): Observable<readonly ProductSummary[]> {
@@ -52,6 +86,63 @@ export class ProductService {
   listFeatured(limit = 8): Observable<readonly ProductSummary[]> {
     return of(sortProducts(MOCK_PRODUCTS, 'rating').slice(0, limit));
   }
+
+  private toProduct(primary: ProductResponseWithGroup, groupId: string, variants: readonly ProductVariant[]): Product {
+    const selfVariant = variants.find((v) => v.sku === primary.sku);
+    return {
+      sku: primary.sku,
+      groupId,
+      name: primary.name,
+      brand: primary.brand ?? '',
+      categoryId: primary.category.id ?? '',
+      thumbnailUrl: placeholderImage(primary.sku, primary.name),
+      price: primary.price,
+      ratingAverage: primary.ratingSummary?.avg ?? 0,
+      ratingCount: primary.ratingSummary?.count ?? 0,
+      inStock: selfVariant?.inStock ?? true,
+      description: primary.description ?? '',
+      images: [placeholderImage(primary.sku, primary.name)],
+      attributes: attributesRecord(primary.attributes),
+      variants,
+    };
+  }
+
+  private toVariant(response: ProductResponseWithGroup): Observable<ProductVariant> {
+    return this.inventoryApi.getStockLevel(response.sku).pipe(
+      map((stock) => ({
+        sku: response.sku,
+        attributes: attributesRecord(response.attributes),
+        price: response.price,
+        inStock: stock.availableQty > 0,
+      })),
+      catchError(() =>
+        of({
+          sku: response.sku,
+          attributes: attributesRecord(response.attributes),
+          price: response.price,
+          // No stock signal reachable — assumed orderable rather than hiding the variant outright;
+          // the real availability gate is the cart/order-time reserve call, not this display hint.
+          inStock: true,
+        }),
+      ),
+    );
+  }
+}
+
+function attributesRecord(attributes: ProductResponse['attributes']): Record<string, string> {
+  const record: Record<string, string> = {};
+  if (attributes?.color) {
+    record['Color'] = attributes.color;
+  }
+  if (attributes?.size) {
+    record['Size'] = attributes.size;
+  }
+  for (const [key, value] of Object.entries(attributes?.extendedAttributes ?? {})) {
+    if (value != null) {
+      record[key] = String(value);
+    }
+  }
+  return record;
 }
 
 export function sortProducts(

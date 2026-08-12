@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 
 import { MOCK_PRODUCTS } from '../../catalog/data/mock-catalog';
-import { addMoney, multiplyMoney, subtractMoney } from '../../../shared/util/money';
+import { Money, addMoney, multiplyMoney, subtractMoney } from '../../../shared/util/money';
 import { CartQuote, PriceQuote, Promotion } from './models';
 
 /** A single flash-sale campaign for the mock catalog, so WEB-29's countdown has a real end time to render, never a fabricated one. */
@@ -49,7 +49,7 @@ export class PricingService {
    * reflects the real endpoint's currency-aware contract shape.
    */
   quoteCart(
-    items: readonly { readonly sku: string; readonly quantity: number }[],
+    items: readonly { readonly sku: string; readonly quantity: number; readonly unitPrice?: Money }[],
     currency: string,
   ): Observable<CartQuote> {
     let subtotal = { amount: 0, currency };
@@ -57,11 +57,15 @@ export class PricingService {
 
     for (const item of items) {
       const product = MOCK_PRODUCTS.find((candidate) => candidate.sku === item.sku);
-      if (!product) {
+      // A real seeded product (not in this mock catalog) still carries its own real unit price
+      // on the cart line itself (CartService's display cache, sourced from ProductService's real
+      // GetProduct call) — trust that over silently treating an unrecognized sku as free.
+      const unitPrice = product?.price ?? item.unitPrice;
+      if (!unitPrice) {
         continue;
       }
-      subtotal = addMoney(subtotal, multiplyMoney(product.price, item.quantity));
-      if (product.listPrice) {
+      subtotal = addMoney(subtotal, multiplyMoney(unitPrice, item.quantity));
+      if (product?.listPrice) {
         discount = addMoney(
           discount,
           subtractMoney(multiplyMoney(product.listPrice, item.quantity), multiplyMoney(product.price, item.quantity)),

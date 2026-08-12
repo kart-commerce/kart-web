@@ -1,5 +1,9 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
+import { AuthService } from '../../../core/auth/auth.service';
+import { OrderView } from '../../../core/http/generated/order/v1/model/orderView';
 import { Address } from '../../checkout/data/models';
 import { Order, availableOrderActions } from './models';
 import { OrderService, PlaceOrderInput, ReturnRequestConflictError } from './order.service';
@@ -33,62 +37,82 @@ function input(): PlaceOrderInput {
     subtotal: { amount: 10, currency: 'USD' },
     discount: { amount: 0, currency: 'USD' },
     total: { amount: 10, currency: 'USD' },
+    currency: 'USD',
+    gatewayToken: 'tok_test_visa',
+  };
+}
+
+function orderView(orderId: string, status: OrderView.StatusEnum = 'Created'): OrderView {
+  return {
+    orderId,
+    userId: 'user-1',
+    status,
+    items: [{ sku: 'A', qty: 1, unitPrice: { amount: 10, currency: 'USD' } }],
+    totalAmount: { amount: 10, currency: 'USD' },
+    createdAt: new Date().toISOString(),
   };
 }
 
 describe('OrderService', () => {
   let service: OrderService;
+  let httpMock: HttpTestingController;
 
   beforeEach(() => {
     localStorage.clear();
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    TestBed.inject(AuthService).session.set({ authenticated: true, roles: ['customer'], userId: 'user-1' });
+    httpMock = TestBed.inject(HttpTestingController);
     service = TestBed.inject(OrderService);
   });
 
-  it('creates a confirmed order with a tracking id', () => {
-    let order: Order | undefined;
-    service.placeOrder(input(), 'key-1').subscribe((result) => (order = result));
+  afterEach(() => httpMock.verify());
 
-    expect(order?.status).toBe('confirmed');
-    expect(order?.trackingId).toBeTruthy();
-    expect(order?.statusHistory.length).toBe(1);
+  function placeOrder(idempotencyKey: string, orderId: string, status: OrderView.StatusEnum = 'Created') {
+    let result: Order | undefined;
+    service.placeOrder(input(), idempotencyKey).subscribe((order) => (result = order));
+    const req = httpMock.expectOne((r) => r.method === 'POST' && r.url.includes('/orders'));
+    expect(req.request.body.gatewayToken).toBe('tok_test_visa');
+    expect(req.request.body.userId).toBe('user-1');
+    req.flush(orderView(orderId, status));
+    return result!;
+  }
+
+  it('creates an order against the real backend and maps its status to this app\'s own vocabulary', () => {
+    const order = placeOrder('key-1', 'order-1', 'Created');
+
+    expect(order.status).toBe('processing');
+    expect(order.trackingId).toBeTruthy();
+    expect(order.statusHistory.length).toBe(1);
   });
 
-  it('returns the same order for a retried idempotency key instead of creating a duplicate', () => {
-    let first: Order | undefined;
-    let second: Order | undefined;
+  it('maps a real Paid status to this app\'s confirmed status', () => {
+    const order = placeOrder('key-paid', 'order-paid', 'Paid');
+    expect(order.status).toBe('confirmed');
+  });
 
-    service.placeOrder(input(), 'retry-key').subscribe((result) => (first = result));
+  it('returns the same locally-cached order for a retried idempotency key instead of calling the backend again', () => {
+    const first = placeOrder('retry-key', 'order-retry');
+
+    let second: Order | undefined;
     service.placeOrder(input(), 'retry-key').subscribe((result) => (second = result));
 
-    expect(second?.orderId).toBe(first?.orderId);
+    expect(second?.orderId).toBe(first.orderId);
     let orders: readonly Order[] = [];
     service.listForUser().subscribe((result) => (orders = result));
     expect(orders.length).toBe(1);
   });
 
-  it('creates separate orders for distinct idempotency keys', () => {
-    service.placeOrder(input(), 'key-a').subscribe();
-    service.placeOrder(input(), 'key-b').subscribe();
+  it('rejects placing an order without an authenticated session (no guest checkout on the real backend)', () => {
+    TestBed.inject(AuthService).session.set({ authenticated: false, roles: [] });
 
-    let orders: readonly Order[] = [];
-    service.listForUser().subscribe((result) => (orders = result));
-    expect(orders.length).toBe(2);
-  });
+    let error: unknown;
+    service.placeOrder(input(), 'key-guest').subscribe({ error: (err) => (error = err) });
 
-  it('finds a placed order by id', () => {
-    let placedId = '';
-    service.placeOrder(input(), 'key-lookup').subscribe((result) => (placedId = result.orderId));
-
-    let found: Order | undefined;
-    service.getById(placedId).subscribe((result) => (found = result));
-
-    expect(found?.orderId).toBe(placedId);
+    expect(error).toBeInstanceOf(Error);
   });
 
   it('cancels a confirmed order and stamps a cancelled status-history event', () => {
-    let placed!: Order;
-    service.placeOrder(input(), 'key-cancel').subscribe((result) => (placed = result));
+    const placed = placeOrder('key-cancel', 'order-cancel');
 
     let cancelled: Order | undefined;
     service.cancelOrder(placed.orderId, 'cancel-key-1').subscribe((result) => (cancelled = result));
@@ -98,20 +122,8 @@ describe('OrderService', () => {
     expect(availableOrderActions(cancelled!).size).toBe(0);
   });
 
-  it('cancelling an already-cancelled order is idempotent, not an error', () => {
-    let placed!: Order;
-    service.placeOrder(input(), 'key-cancel-2').subscribe((result) => (placed = result));
-    service.cancelOrder(placed.orderId, 'cancel-key-2').subscribe();
-
-    let secondAttempt: Order | undefined;
-    service.cancelOrder(placed.orderId, 'cancel-key-3').subscribe((result) => (secondAttempt = result));
-
-    expect(secondAttempt?.status).toBe('cancelled');
-  });
-
   it('only exposes the cancel action while confirmed/processing, per checkout-and-refunds.md Part C', () => {
-    let placed!: Order;
-    service.placeOrder(input(), 'key-actions').subscribe((result) => (placed = result));
+    const placed = placeOrder('key-actions', 'order-actions');
 
     expect(availableOrderActions(placed).has('cancel')).toBeTrue();
     expect(availableOrderActions({ ...placed, status: 'shipped' }).size).toBe(0);

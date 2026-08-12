@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ViewChild, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { Subject, switchMap } from 'rxjs';
@@ -53,6 +53,8 @@ export class CheckoutPage {
   readonly selectedShippingMethodId = signal<string | null>(MOCK_SHIPPING_METHODS[0]?.id ?? null);
   protected readonly shippingMethods: readonly ShippingMethod[] = MOCK_SHIPPING_METHODS;
 
+  @ViewChild(PaymentTokenizationField) private paymentField?: PaymentTokenizationField;
+
   readonly paymentToken = signal<PaymentToken | null>(null);
   readonly paymentFieldValid = signal(false);
 
@@ -104,9 +106,10 @@ export class CheckoutPage {
   }
 
   saveNewAddress(input: AddressInput): void {
-    const address = this.addressService.add(input);
-    this.selectedAddressId.set(address.addressId);
-    this.addingAddress.set(false);
+    this.addressService.add(input).subscribe((address) => {
+      this.selectedAddressId.set(address.addressId);
+      this.addingAddress.set(false);
+    });
   }
 
   selectShippingMethod(methodId: string): void {
@@ -115,6 +118,20 @@ export class CheckoutPage {
 
   onPaymentTokenized(token: PaymentToken): void {
     this.paymentToken.set(token);
+    if (this.step() === 'payment') {
+      this.goToStep('review');
+    }
+  }
+
+  /**
+   * The isolated tokenization iframe only mints a token on an explicit `requestTokenization()`
+   * postMessage (WEB-32's isolation boundary) — nothing previously ever sent that request, so
+   * `paymentToken()` could never be set and "Continue to review" could never enable. Requesting
+   * it here, gated on the field's own reported validity, closes that gap; `onPaymentTokenized`
+   * above advances to `review` once the token actually arrives.
+   */
+  requestPaymentToken(): void {
+    this.paymentField?.requestTokenization();
   }
 
   goToStep(step: CheckoutStep): void {
@@ -141,8 +158,9 @@ export class CheckoutPage {
     const address = this.selectedAddress();
     const shippingMethod = this.selectedShippingMethod();
     const quote = this.quote();
+    const paymentToken = this.paymentToken();
 
-    if (!address || !shippingMethod || !quote || !this.canPlaceOrder()) {
+    if (!address || !shippingMethod || !quote || !paymentToken || !this.canPlaceOrder()) {
       return;
     }
 
@@ -168,6 +186,8 @@ export class CheckoutPage {
           subtotal: quote.subtotal,
           discount: quote.discount,
           total: quote.total,
+          currency: quote.currency,
+          gatewayToken: paymentToken.token,
         },
         idempotencyKey,
       )

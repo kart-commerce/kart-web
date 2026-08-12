@@ -13,6 +13,7 @@ import { routes } from './app.routes';
 import { provideAppConfig } from './core/config/app-config.provider';
 import { provideFeatureFlags } from './core/config/feature-flags.provider';
 import { authInterceptor } from './core/auth/auth.interceptor';
+import { guestSessionInterceptor } from './core/auth/guest-session.interceptor';
 import { provideGeneratedApiClients } from './core/http/generated-clients.provider';
 
 export const appConfig: ApplicationConfig = {
@@ -21,7 +22,7 @@ export const appConfig: ApplicationConfig = {
     provideZonelessChangeDetection(),
     provideRouter(routes),
     provideClientHydration(withHttpTransferCacheOptions({ includePostRequests: false })),
-    provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([authInterceptor, guestSessionInterceptor])),
     provideAppConfig(),
     provideFeatureFlags(),
     // One BASE_PATH provider per generated client (WEB-3) — see

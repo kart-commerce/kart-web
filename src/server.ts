@@ -9,6 +9,7 @@ import { join } from 'node:path';
 
 import { bffRouter } from './server/bff/routes';
 import { gatewayProxyRouter } from './server/bff/gateway-proxy';
+import { publicGatewayProxyRouter } from './server/bff/public-gateway-proxy';
 import { logger } from './server/logger';
 
 /**
@@ -58,6 +59,13 @@ app.set('trust proxy', resolveTrustProxySetting(process.env['TRUST_PROXY']));
 app.use(express.json());
 app.use('/api/bff', bffRouter);
 app.use('/api/bff/gateway', gatewayProxyRouter);
+
+/**
+ * Production equivalent of `proxy.conf.json`'s dev-server-only `/v1 -> gateway` rule — see
+ * `public-gateway-proxy.ts`'s own doc comment for the bug this closes. Mounted ahead of the SSR
+ * catch-all for the same reason the BFF routes above are.
+ */
+app.use('/v1', publicGatewayProxyRouter);
 
 /**
  * Single error-handling boundary for the BFF routes (kart-conventions.md's

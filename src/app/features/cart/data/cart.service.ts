@@ -1,57 +1,49 @@
 import { isPlatformBrowser } from '@angular/common';
-import { Injectable, OnDestroy, PLATFORM_ID, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, OnDestroy, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+import { catchError, forkJoin, map, of, switchMap, tap } from 'rxjs';
 
 import { AuthService } from '../../../core/auth/auth.service';
+import { DefaultService as CartApi } from '../../../core/http/generated/cart/v1';
+import { CartLineItem } from '../../../core/http/generated/cart/v1/model/cartLineItem';
+import { ProductService } from '../../catalog/data/product.service';
 import { addMoney, subtractMoney, ZERO_USD } from '../../../shared/util/money';
 import { AppliedCoupon } from '../../pricing-promotions/data/models';
 import { CartItem } from './models';
 
-type CartBucket = 'guest' | 'user';
-
-interface StoredCart {
-  readonly items: readonly CartItem[];
-  readonly coupon: AppliedCoupon | null;
-}
-
-const EMPTY_CART: StoredCart = { items: [], coupon: null };
-const BUCKET_STORAGE_KEYS: Readonly<Record<CartBucket, string>> = {
-  guest: 'kart-cart-guest-v1',
-  user: 'kart-cart-user-v1',
-};
+/** A line's own maxQuantity is a UI clamp only — kart-cart-service enforces no per-line cap itself. */
+const DEFAULT_MAX_QUANTITY = 10;
 const CART_SYNC_CHANNEL = 'kart-cart-sync';
 
 /**
- * Stands in for kart-cart-service's `GET/POST/PATCH/DELETE /v1/cart*` (plus the coupon it
- * carries once redeemed via kart-offer-service) — see mock-catalog.ts's note on the
- * mock-now/generated-client-later approach.
+ * Real kart-cart-service (`GET/POST/PATCH/DELETE /v1/cart*`, `POST /v1/cart/merge`) — owner
+ * resolution (logged-in user vs. guest session) happens server-side per request, via the
+ * `Authorization` bearer token or the `X-Guest-Session-Id` header (`guest-session.interceptor.ts`
+ * attaches the latter); this service no longer needs its own guest/user storage-bucket split.
  *
- * WEB-21: a guest and an authenticated session are two distinct storage buckets (never one
- * shared array silently reused across identities) — which bucket is "active" follows
- * `AuthService.session()`.
+ * The server's own `CartLineItem` is only `{sku, quantity, availability}` — no name/thumbnail/
+ * price — so display fields are cached client-side at add-time and lazily backfilled via
+ * `ProductService.getBySku` for any sku the cache doesn't already have (e.g. a cart hydrated
+ * fresh on a new device/tab).
  *
- * WEB-22: `AuthService.loginCompleted$` (fired exactly once per real login completing in this
- * tab — never for `loadSession()` merely discovering an already-authenticated session on
- * boot) merges the guest cart into the user cart by summed quantity per sku (capped at
- * `maxQuantity`, matching `add()`'s own clamp rule), then clears the guest bucket — the real
- * `mergeGuestCartIntoUserCart` endpoint's documented behavior, reproduced client-side until
- * that call is wired up.
- *
- * WEB-23: a `BroadcastChannel('kart-cart-sync')` message on every write lets every other open
- * tab on the same device re-read the active bucket immediately — same-device cross-tab
- * reconciliation (Domain/UX Invariant #1). Cross-*device* sync additionally needs the
- * server-authoritative real-time channel (WEB-10), which this only complements, not replaces.
+ * Coupon state (`appliedCoupon`/`applyCoupon`/`removeCoupon`) stays client-local/display-only —
+ * kart-cart-service's own `CartResponse` has no coupon field, and kart-order-service's
+ * `CreateOrder` contract has no discount field either (a real, documented cross-service gap, not
+ * fixed this session — see the flow's known-limitations note).
  */
 @Injectable({ providedIn: 'root' })
 export class CartService implements OnDestroy {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly authService = inject(AuthService);
+  private readonly cartApi = inject(CartApi);
+  private readonly productService = inject(ProductService);
   private channel: BroadcastChannel | null = null;
 
-  private readonly bucket = signal<CartBucket>(this.initialBucket());
-  private readonly store = signal<StoredCart>(this.readFromStorage(this.initialBucket()));
+  private readonly displayCache = new Map<string, Omit<CartItem, 'quantity' | 'inStock'>>();
+  private readonly etag = signal<string | undefined>(undefined);
+  private readonly coupon = signal<AppliedCoupon | null>(null);
 
-  readonly cartItems = computed(() => this.store().items);
-  readonly appliedCoupon = computed(() => this.store().coupon);
+  readonly cartItems = signal<readonly CartItem[]>([]);
+  readonly appliedCoupon = this.coupon.asReadonly();
   readonly itemCount = computed(() => this.cartItems().reduce((sum, item) => sum + item.quantity, 0));
   readonly subtotal = computed(() =>
     this.cartItems().reduce(
@@ -68,38 +60,24 @@ export class CartService implements OnDestroy {
   readonly hasUnavailableItems = computed(() => this.cartItems().some((item) => !item.inStock));
 
   constructor() {
-    effect(() => this.writeToStorage(this.bucket(), this.store()));
+    if (isPlatformBrowser(this.platformId)) {
+      this.refreshFromServer().subscribe();
 
-    if (isPlatformBrowser(this.platformId) && typeof BroadcastChannel !== 'undefined') {
-      this.channel = new BroadcastChannel(CART_SYNC_CHANNEL);
-      this.channel.onmessage = (event: MessageEvent<{ bucket: CartBucket }>) => {
-        if (event.data.bucket === this.bucket()) {
-          this.store.set(this.readFromStorage(this.bucket()));
-        }
-      };
+      if (typeof BroadcastChannel !== 'undefined') {
+        this.channel = new BroadcastChannel(CART_SYNC_CHANNEL);
+        this.channel.onmessage = () => this.refreshFromServer().subscribe();
+      }
     }
 
     this.authService.loginCompleted$.subscribe(() => this.mergeGuestCartIntoUserCart());
   }
 
   add(item: Omit<CartItem, 'quantity'>, quantity = 1): void {
-    this.update((current) => {
-      const existing = current.items.find((line) => line.sku === item.sku);
-      if (!existing) {
-        return {
-          ...current,
-          items: [...current.items, { ...item, quantity: Math.min(quantity, item.maxQuantity) }],
-        };
-      }
-      return {
-        ...current,
-        items: current.items.map((line) =>
-          line.sku === item.sku
-            ? { ...line, ...item, quantity: Math.min(line.quantity + quantity, item.maxQuantity) }
-            : line,
-        ),
-      };
-    });
+    this.displayCache.set(item.sku, item);
+    this.cartApi
+      .addCartItem({ sku: item.sku, quantity }, this.etag(), 'response')
+      .pipe(switchMap((response) => this.applyServerCart(response)))
+      .subscribe({ next: () => this.broadcast(), error: () => this.refreshFromServer().subscribe() });
   }
 
   updateQuantity(sku: string, quantity: number): void {
@@ -107,44 +85,53 @@ export class CartService implements OnDestroy {
       this.remove(sku);
       return;
     }
-    this.update((current) => ({
-      ...current,
-      items: current.items.map((line) =>
-        line.sku === sku ? { ...line, quantity: Math.min(quantity, line.maxQuantity) } : line,
-      ),
-    }));
+    this.cartApi
+      .setCartItemQuantity(sku, { quantity }, this.etag(), 'response')
+      .pipe(switchMap((response) => this.applyServerCart(response)))
+      .subscribe({ next: () => this.broadcast(), error: () => this.refreshFromServer().subscribe() });
   }
 
   remove(sku: string): void {
-    this.update((current) => ({ ...current, items: current.items.filter((line) => line.sku !== sku) }));
+    this.cartApi
+      .removeCartItem(sku, this.etag(), 'response')
+      .pipe(switchMap(() => this.refreshFromServer()))
+      .subscribe({ next: () => this.broadcast(), error: () => this.refreshFromServer().subscribe() });
   }
 
   /** Marks a line's availability from a fresh stock check (WEB-24) — never left to silently read stale. */
   setAvailability(sku: string, inStock: boolean): void {
-    this.update((current) => ({
-      ...current,
-      items: current.items.map((line) => (line.sku === sku ? { ...line, inStock } : line)),
-    }));
+    this.cartItems.update((current) => current.map((line) => (line.sku === sku ? { ...line, inStock } : line)));
   }
 
   /** Domain Invariant #2: a line's displayed price must never be staler than the last known price event. */
   updatePrice(sku: string, unitPrice: CartItem['unitPrice']): void {
-    this.update((current) => ({
-      ...current,
-      items: current.items.map((line) => (line.sku === sku ? { ...line, unitPrice } : line)),
-    }));
+    const cached = this.displayCache.get(sku);
+    if (cached) {
+      this.displayCache.set(sku, { ...cached, unitPrice });
+    }
+    this.cartItems.update((current) => current.map((line) => (line.sku === sku ? { ...line, unitPrice } : line)));
   }
 
   applyCoupon(coupon: AppliedCoupon): void {
-    this.update((current) => ({ ...current, coupon }));
+    this.coupon.set(coupon);
   }
 
   removeCoupon(): void {
-    this.update((current) => ({ ...current, coupon: null }));
+    this.coupon.set(null);
   }
 
+  /** Best-effort: records the analytics-only CartCheckedOut event server-side, then drops local state — see class doc comment. */
   clear(): void {
-    this.store.set(EMPTY_CART);
+    this.cartApi
+      .checkoutCart()
+      .pipe(catchError(() => of(undefined)))
+      .subscribe(() => {
+        this.cartItems.set([]);
+        this.coupon.set(null);
+        this.etag.set(undefined);
+        this.displayCache.clear();
+        this.broadcast();
+      });
   }
 
   ngOnDestroy(): void {
@@ -152,56 +139,64 @@ export class CartService implements OnDestroy {
   }
 
   private mergeGuestCartIntoUserCart(): void {
-    // The persistence effect flushes to localStorage asynchronously, so the
-    // *currently active* bucket's freshest state is `this.store()`, not
-    // necessarily what's been written to storage yet — only the inactive
-    // bucket is safe to read from storage directly.
-    const guestCart = this.bucket() === 'guest' ? this.store() : this.readFromStorage('guest');
-    const userCart = this.bucket() === 'user' ? this.store() : this.readFromStorage('user');
-
-    const mergedItems: CartItem[] = [...userCart.items];
-    for (const guestLine of guestCart.items) {
-      const index = mergedItems.findIndex((line) => line.sku === guestLine.sku);
-      if (index === -1) {
-        mergedItems.push(guestLine);
-      } else {
-        mergedItems[index] = {
-          ...mergedItems[index],
-          quantity: Math.min(mergedItems[index].quantity + guestLine.quantity, mergedItems[index].maxQuantity),
-        };
-      }
-    }
-
-    this.bucket.set('user');
-    this.store.set({ items: mergedItems, coupon: userCart.coupon ?? guestCart.coupon });
-    this.writeToStorage('guest', EMPTY_CART);
-  }
-
-  private update(updater: (current: StoredCart) => StoredCart): void {
-    this.store.update(updater);
-  }
-
-  private initialBucket(): CartBucket {
-    return this.authService.session()?.authenticated ? 'user' : 'guest';
-  }
-
-  private readFromStorage(bucket: CartBucket): StoredCart {
-    if (!isPlatformBrowser(this.platformId)) {
-      return EMPTY_CART;
-    }
-    try {
-      const raw = localStorage.getItem(BUCKET_STORAGE_KEYS[bucket]);
-      return raw ? (JSON.parse(raw) as StoredCart) : EMPTY_CART;
-    } catch {
-      return EMPTY_CART;
-    }
-  }
-
-  private writeToStorage(bucket: CartBucket, cart: StoredCart): void {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
-    localStorage.setItem(BUCKET_STORAGE_KEYS[bucket], JSON.stringify(cart));
-    this.channel?.postMessage({ bucket });
+    this.cartApi
+      .mergeGuestCartIntoUserCart('response')
+      .pipe(
+        switchMap((response) => this.applyServerCart(response)),
+        catchError(() => this.refreshFromServer()),
+      )
+      .subscribe(() => this.broadcast());
+  }
+
+  private refreshFromServer() {
+    return this.cartApi.getCurrentCart('response').pipe(
+      switchMap((response) => this.applyServerCart(response)),
+      catchError(() => of(undefined)),
+    );
+  }
+
+  /** Merges the server's authoritative `{sku, quantity, availability}` lines with cached/re-fetched display fields. */
+  private applyServerCart(response: { body: { items: readonly CartLineItem[] } | null; headers: { get(name: string): string | null } }) {
+    this.etag.set(response.headers.get('etag') ?? undefined);
+    const items = response.body?.items ?? [];
+
+    if (items.length === 0) {
+      this.cartItems.set([]);
+      return of(undefined);
+    }
+
+    return forkJoin(items.map((line) => this.toCartItem(line))).pipe(
+      tap((cartItems) => this.cartItems.set(cartItems)),
+      map(() => undefined),
+    );
+  }
+
+  private toCartItem(line: CartLineItem) {
+    const cached = this.displayCache.get(line.sku);
+    const inStock = line.availability === 'Available';
+
+    if (cached) {
+      return of({ ...cached, quantity: line.quantity, inStock });
+    }
+
+    return this.productService.getBySku(line.sku).pipe(
+      map((product) => ({
+        sku: line.sku,
+        name: product?.name ?? line.sku,
+        thumbnailUrl: product?.thumbnailUrl ?? '',
+        unitPrice: product?.price ?? ZERO_USD,
+        maxQuantity: DEFAULT_MAX_QUANTITY,
+        quantity: line.quantity,
+        inStock,
+      })),
+      tap((item) => this.displayCache.set(line.sku, item)),
+    );
+  }
+
+  private broadcast(): void {
+    this.channel?.postMessage({});
   }
 }

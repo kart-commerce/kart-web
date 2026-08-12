@@ -101,7 +101,7 @@
             @if (paymentToken(); as token) {
               <p class="kart-checkout-page__payment-confirmed">{{ token.brand }} ending in {{ token.last4 }} confirmed.</p>
             }
-            <kart-button [fullWidth]="true" [disabled]="!paymentToken()" (click)="goToStep('review')">
+            <kart-button [fullWidth]="true" [disabled]="!paymentFieldValid()" (click)="requestPaymentToken()">
               Continue to review
             </kart-button>
           </kart-card>
