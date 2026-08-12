@@ -1,0 +1,27 @@
+<section class="kart-auth-page">
+  <h1>Enter your one-time code</h1>
+  <p>Enter the 6-digit code we sent to {{ email() }}.</p>
+
+  @if (errorMessage(); as message) {
+    <kart-alert variant="danger">{{ message }}</kart-alert>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="submit()">
+    <kart-form-field label="One-time code" inputId="otp-code">
+      <input
+        kartInput
+        id="otp-code"
+        type="text"
+        inputmode="numeric"
+        formControlName="code"
+        autocomplete="one-time-code"
+        maxlength="6"
+        required
+      />
+    </kart-form-field>
+
+    <kart-button type="submit" [loading]="submitting()">Log in</kart-button>
+  </form>
+
+  <p><a routerLink="/account/otp-login">Request a new code</a></p>
+</section>

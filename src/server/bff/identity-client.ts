@@ -15,6 +15,18 @@ import { SERVICE_ENDPOINTS } from '../../app/core/config/service-endpoints';
 const IDENTITY_SERVICE_BASE_URL = process.env['IDENTITY_SERVICE_BASE_URL'] ?? SERVICE_ENDPOINTS.identity;
 
 /**
+ * Distinct from IDENTITY_SERVICE_BASE_URL on purpose: that one is a server-to-server URL (in the
+ * live Docker stack it resolves to the Docker-internal `http://identity:8080` DNS name, only
+ * reachable from inside the compose network) used for calls this Node process makes itself.
+ * Redirect URLs handed back in an HTTP `Location` header are followed by the end user's own
+ * browser, outside that network — using the internal hostname there produces an unreachable
+ * redirect (confirmed: clicking "Sign in with Google" against the live stack failed with a
+ * DNS/connection error before this was split out). Defaults to the same browser-reachable
+ * host-mapped port SERVICE_ENDPOINTS.identity already documents.
+ */
+const IDENTITY_SERVICE_PUBLIC_BASE_URL = process.env['IDENTITY_SERVICE_PUBLIC_BASE_URL'] ?? SERVICE_ENDPOINTS.identity;
+
+/**
  * Every call this client makes gets a hard timeout — at 100k-200k req/min across many pods, an
  * identity-service that merely stalls (rather than cleanly erroring) instead of a fast failure
  * would otherwise hold this process's request (and the underlying socket) open indefinitely,
@@ -87,6 +99,20 @@ export const identityClient = {
     });
   },
 
+  requestOtp(request: { email: string }) {
+    return identityFetch<undefined | Problem>('/auth/otp/request', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
+  verifyOtp(request: { email: string; code: string }) {
+    return identityFetch<TokenPair | MfaChallenge | Problem>('/auth/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
   refresh(request: { refreshToken: string }) {
     return identityFetch<TokenPair | Problem>('/auth/refresh', {
       method: 'POST',
@@ -139,6 +165,6 @@ export const identityClient = {
 
   /** Browser-reachable base URL for redirecting to the IdP-initiated login step. */
   socialLoginRedirectUrl(provider: string): string {
-    return `${IDENTITY_SERVICE_BASE_URL}/v1/auth/sso/social/${encodeURIComponent(provider)}/login`;
+    return `${IDENTITY_SERVICE_PUBLIC_BASE_URL}/v1/auth/sso/social/${encodeURIComponent(provider)}/login`;
   },
 };

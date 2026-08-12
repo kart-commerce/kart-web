@@ -38,6 +38,15 @@ export interface MfaVerifyRequest {
   readonly totpCode: string;
 }
 
+export interface OtpRequestRequest {
+  readonly email: string;
+}
+
+export interface OtpVerifyRequest {
+  readonly email: string;
+  readonly code: string;
+}
+
 export interface PasswordResetInitiateRequest {
   readonly email: string;
 }

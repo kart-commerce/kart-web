@@ -21,6 +21,8 @@ import { sessionStore, StoredSession } from './session-store';
 const REGISTER_RATE_LIMIT = rateLimit({ name: 'register', limit: 5, windowSeconds: 600 });
 const LOGIN_RATE_LIMIT = rateLimit({ name: 'login', limit: 10, windowSeconds: 60 });
 const MFA_RATE_LIMIT = rateLimit({ name: 'mfa', limit: 10, windowSeconds: 60 });
+const OTP_REQUEST_RATE_LIMIT = rateLimit({ name: 'otp-request', limit: 5, windowSeconds: 600 });
+const OTP_VERIFY_RATE_LIMIT = rateLimit({ name: 'otp-verify', limit: 10, windowSeconds: 60 });
 const REFRESH_RATE_LIMIT = rateLimit({ name: 'refresh', limit: 30, windowSeconds: 60, keyFn: sessionOrIpKey });
 const PASSWORD_RESET_INITIATE_RATE_LIMIT = rateLimit({ name: 'password-reset-initiate', limit: 5, windowSeconds: 900 });
 const PASSWORD_RESET_CONFIRM_RATE_LIMIT = rateLimit({ name: 'password-reset-confirm', limit: 10, windowSeconds: 60 });
@@ -109,6 +111,28 @@ bffRouter.post('/auth/mfa/verify', MFA_RATE_LIMIT, async (req, res) => {
   }
   const stored = await establishSession(res, body as TokenPair);
   res.json(toSessionInfo(stored));
+});
+
+bffRouter.post('/auth/otp/request', OTP_REQUEST_RATE_LIMIT, async (req, res) => {
+  const { status, body } = await identityClient.requestOtp(req.body);
+  res.status(status).json(body ?? {});
+});
+
+bffRouter.post('/auth/otp/verify', OTP_VERIFY_RATE_LIMIT, async (req, res) => {
+  const { status, body } = await identityClient.verifyOtp(req.body);
+
+  if (status === 200) {
+    const stored = await establishSession(res, body as TokenPair);
+    res.json({ status: 'authenticated', session: toSessionInfo(stored) });
+    return;
+  }
+
+  if (status === 202) {
+    res.status(202).json({ status: 'mfa-required', challenge: body as MfaChallenge });
+    return;
+  }
+
+  res.status(status).json(body as Problem);
 });
 
 /**

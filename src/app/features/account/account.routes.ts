@@ -17,6 +17,14 @@ export const accountRoutes: Routes = [
       import('./mfa-challenge/mfa-challenge-page').then((m) => m.MfaChallengePage),
   },
   {
+    path: 'otp-login',
+    loadComponent: () => import('./otp-login/otp-login-page').then((m) => m.OtpLoginPage),
+  },
+  {
+    path: 'otp-login/verify',
+    loadComponent: () => import('./otp-login/otp-verify-page').then((m) => m.OtpVerifyPage),
+  },
+  {
     path: 'password-reset',
     loadComponent: () =>
       import('./password-reset-request/password-reset-request-page').then(

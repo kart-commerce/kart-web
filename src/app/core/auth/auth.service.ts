@@ -6,6 +6,8 @@ import {
   LoginRequest,
   LoginResult,
   MfaVerifyRequest,
+  OtpRequestRequest,
+  OtpVerifyRequest,
   PasswordResetConfirmRequest,
   PasswordResetInitiateRequest,
   RegisterRequest,
@@ -77,6 +79,16 @@ export class AuthService {
         this.loginCompleted$.next();
       }),
     );
+  }
+
+  requestOtp(request: OtpRequestRequest): Observable<void> {
+    return this.http.post<void>('/api/bff/auth/otp/request', request);
+  }
+
+  verifyOtp(request: OtpVerifyRequest): Observable<LoginResult> {
+    return this.http
+      .post<LoginResult>('/api/bff/auth/otp/verify', request)
+      .pipe(tap((result) => this.applyLoginResult(result)));
   }
 
   requestPasswordReset(request: PasswordResetInitiateRequest): Observable<void> {
