@@ -29,10 +29,10 @@ export const routes: Routes = [
   },
   {
     path: '',
-    loadChildren: () => import('./features/cms/cms.routes').then((m) => m.cmsRoutes),
+    loadChildren: () => import('./features/catalog/catalog.routes').then((m) => m.catalogRoutes),
   },
   {
     path: '',
-    loadChildren: () => import('./features/catalog/catalog.routes').then((m) => m.catalogRoutes),
+    loadChildren: () => import('./features/cms/cms.routes').then((m) => m.cmsRoutes),
   },
 ];

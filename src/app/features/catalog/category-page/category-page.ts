@@ -7,6 +7,7 @@ import { KartInput, Spinner } from '../../../shared/ui';
 import { SeoService } from '../../../core/seo/seo.service';
 import { ProductCard } from '../product-card/product-card';
 import { ProductService, ProductSort, sortProducts } from '../data/product.service';
+import { CategoryNavService } from '../category-nav/category-nav.service';
 
 function formatCategoryName(categoryId: string): string {
   return categoryId
@@ -36,6 +37,7 @@ export class CategoryPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly productService = inject(ProductService);
+  private readonly categoryNav = inject(CategoryNavService);
   private readonly seo = inject(SeoService);
 
   private readonly categoryId$ = this.route.paramMap.pipe(map((params) => params.get('categoryId') ?? ''));
@@ -51,7 +53,10 @@ export class CategoryPage {
   });
 
   private readonly allProducts = toSignal(
-    this.categoryId$.pipe(switchMap((categoryId) => this.productService.listByCategory(categoryId, 'relevance'))),
+    this.categoryId$.pipe(
+      switchMap((categoryId) => this.categoryNav.resolveLeafCategoryIds(categoryId)),
+      switchMap((categoryIds) => this.productService.listByCategory(categoryIds, 'relevance')),
+    ),
   );
 
   protected readonly availableBrands = computed(() => {

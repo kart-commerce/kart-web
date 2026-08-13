@@ -7,8 +7,10 @@ import { DefaultService as ProductApi } from '../../../core/http/generated/produ
 import { BASE_PATH as PRODUCT_BASE_PATH } from '../../../core/http/generated/product/v1/variables';
 import { ProductResponse } from '../../../core/http/generated/product/v1/model/productResponse';
 import { DefaultService as InventoryApi } from '../../../core/http/generated/inventory/v1';
+import { DefaultService as SearchApi } from '../../../core/http/generated/search/v1';
 import { Product, ProductSummary, ProductVariant } from './models';
 import { MOCK_PRODUCTS } from './mock-catalog';
+import { toProductSummary } from './search-result-mapper';
 
 export type ProductSort = 'relevance' | 'price-asc' | 'price-desc' | 'rating';
 
@@ -17,18 +19,36 @@ interface ProductResponseWithGroup extends ProductResponse {
   readonly productGroupId: string;
 }
 
+function toSearchSort(sort: ProductSort): 'relevance' | 'price_asc' | 'price_desc' | 'rating_desc' {
+  switch (sort) {
+    case 'price-asc':
+      return 'price_asc';
+    case 'price-desc':
+      return 'price_desc';
+    case 'rating':
+      return 'rating_desc';
+    case 'relevance':
+    default:
+      return 'relevance';
+  }
+}
+
 /**
  * `getBySku`/`listVariants` call the real kart-product-service (`GET /v1/products/{sku}`,
  * `GET /v1/product-groups/{id}/variants`) joined client-side with kart-inventory-service's
  * `GET /v1/inventory/{sku}` for per-variant availability — see `models.ts`'s doc comment.
- * `listByCategory`/`listByBrand`/`listBrands`/`listRelated`/`listFeatured` remain mocked: those
- * back category/brand-browse pages, not the Normal Shopping & Purchase Journey's own
+ * `listByCategory` calls the real kart-search-service (`GET /v1/search?category=`), the only
+ * real facility for category-scoped browse — kart-product-service itself exposes no list/browse
+ * endpoint (see `contracts/kart-product-service.api-contract.yaml`).
+ * `listByBrand`/`listBrands`/`listRelated`/`listFeatured` remain mocked: those back brand-browse
+ * pages and the homepage's trending rail, not the Normal Shopping & Purchase Journey's own
  * Search→PDP→Add-to-Cart sequence, and are out of scope for this flow's build.
  */
 @Injectable({ providedIn: 'root' })
 export class ProductService {
   private readonly productApi = inject(ProductApi);
   private readonly inventoryApi = inject(InventoryApi);
+  private readonly searchApi = inject(SearchApi);
   private readonly http = inject(HttpClient);
   private readonly basePath = inject(PRODUCT_BASE_PATH, { optional: true }) ?? '';
 
@@ -56,9 +76,17 @@ export class ProductService {
     );
   }
 
-  listByCategory(categoryId: string, sort: ProductSort = 'relevance'): Observable<readonly ProductSummary[]> {
-    const matches = MOCK_PRODUCTS.filter((product) => product.categoryId === categoryId);
-    return of(sortProducts(matches, sort));
+  /** `categoryIds` — the target category's own leaf descendants (see `CategoryNavService.resolveLeafCategoryIds`), since the search index matches a product's own leaf categoryId only. */
+  listByCategory(categoryIds: readonly string[], sort: ProductSort = 'relevance'): Observable<readonly ProductSummary[]> {
+    if (categoryIds.length === 0) {
+      return of([]);
+    }
+    return this.searchApi
+      .searchProducts(undefined, [...categoryIds], undefined, undefined, undefined, toSearchSort(sort))
+      .pipe(
+        map((response) => response.results.map(toProductSummary)),
+        catchError(() => of([])),
+      );
   }
 
   /** WEB-20 — brand pages: a filtered PLP view keyed on the brand facet, not a new backend service/aggregate. */
