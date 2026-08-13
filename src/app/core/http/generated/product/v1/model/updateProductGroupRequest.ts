@@ -14,6 +14,7 @@ export interface UpdateProductGroupRequest {
     description?: string;
     categoryId?: string;
     brand?: string;
+    imageUrl?: string;
     /**
      * Only a forward transition to Archived is accepted here (ddd-model.md — Variant discontinuation is one-directional; there is no un-archive path).
      */

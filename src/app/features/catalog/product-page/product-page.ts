@@ -90,6 +90,7 @@ export class ProductPage {
   protected readonly wishlistService = inject(WishlistService);
 
   private readonly sku$ = this.route.paramMap.pipe(map((params) => params.get('sku') ?? ''));
+  private readonly sku = toSignal(this.sku$, { initialValue: '' });
 
   private readonly ssrProduct = toSignal(this.sku$.pipe(switchMap((sku) => this.productService.getBySku(sku))), {
     initialValue: undefined as Product | undefined,
@@ -144,7 +145,10 @@ export class ProductPage {
       }
       // Re-fetch (not merely re-subscribe) the instant hydration completes — the transferred
       // value's trust is discarded for price/stock specifically (Domain Invariants #2/#4).
-      this.productService.getBySku(this.ssrProduct()?.sku ?? '').subscribe((fresh) => {
+      // Sourced from the route's own sku, not `ssrProduct()?.sku` — if the SSR-time fetch
+      // failed (network hiccup, transient 5xx), `ssrProduct()` is undefined and that would
+      // silently re-fetch an empty sku instead of retrying the real one.
+      this.productService.getBySku(this.sku()).subscribe((fresh) => {
         if (fresh) {
           this.freshVariants.set(new Map(fresh.variants.map((variant) => [variant.sku, variant])));
         }

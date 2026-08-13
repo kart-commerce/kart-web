@@ -11,9 +11,7 @@ export function toProductSummary(item: SearchResultItem): ProductSummary {
     name: item.name,
     brand: item.brand,
     categoryId: item.category.categoryId,
-    // The search index carries no image field (a content/indexing gap, not fixed this session) —
-    // every result card renders a deterministic placeholder keyed off its own sku instead.
-    thumbnailUrl: placeholderImage(item.sku, item.name),
+    thumbnailUrl: item.imageUrl || placeholderImage(item.sku, item.name),
     price: item.price,
     ratingAverage: item.rating.avg ?? 0,
     ratingCount: item.rating.count ?? 0,

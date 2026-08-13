@@ -1,5 +1,4 @@
 .gitignore
-.openapi-generator-ignore
 README.md
 api.module.ts
 api/api.ts
@@ -22,8 +21,5 @@ model/ratingSummary.ts
 model/updateProductGroup200Response.ts
 model/updateProductGroupRequest.ts
 model/updateVariantRequest.ts
-ng-package.json
-package.json
 param.ts
-tsconfig.json
 variables.ts

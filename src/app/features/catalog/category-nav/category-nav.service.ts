@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 
+import { Category } from '../../../core/http/generated/category/v1/model/category';
 import { DefaultService } from '../../../core/http/generated/category/v1/api/default.service';
 import { CategoryTreeNode } from './category-tree-node';
 
@@ -24,6 +25,11 @@ export class CategoryNavService {
 
   loadChildren(parentId: string): Observable<CategoryTreeNode[]> {
     return this.loadLevel(parentId);
+  }
+
+  /** Single-category lookup by id (e.g. the category page's own title) - real `GET /v1/categories/{id}`. */
+  getCategory(categoryId: string): Observable<Category | undefined> {
+    return this.categoryApi.getCategory(categoryId).pipe(catchError(() => of(undefined)));
   }
 
   /**

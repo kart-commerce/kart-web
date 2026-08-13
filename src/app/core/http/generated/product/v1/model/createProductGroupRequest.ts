@@ -25,5 +25,9 @@ export interface CreateProductGroupRequest {
     sku: string;
     price: Money;
     attributes?: ProductAttributes;
+    /**
+     * A real photo URL. Omit and a real stock photo is assigned automatically - every product has one either way.
+     */
+    imageUrl?: string;
 }
 

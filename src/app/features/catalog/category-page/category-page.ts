@@ -9,6 +9,8 @@ import { ProductCard } from '../product-card/product-card';
 import { ProductService, ProductSort, sortProducts } from '../data/product.service';
 import { CategoryNavService } from '../category-nav/category-nav.service';
 
+/** Transient fallback shown only until the real category name (fetched via CategoryNavService)
+ * resolves, or if that fetch fails - never the steady-state display value. */
 function formatCategoryName(categoryId: string): string {
   return categoryId
     .split('-')
@@ -42,7 +44,12 @@ export class CategoryPage {
 
   private readonly categoryId$ = this.route.paramMap.pipe(map((params) => params.get('categoryId') ?? ''));
   readonly categoryId = toSignal(this.categoryId$, { initialValue: '' });
-  protected readonly categoryName = () => formatCategoryName(this.categoryId());
+
+  private readonly fetchedCategoryName = toSignal(
+    this.categoryId$.pipe(switchMap((categoryId) => this.categoryNav.getCategory(categoryId).pipe(map((category) => category?.name)))),
+    { initialValue: undefined },
+  );
+  protected readonly categoryName = () => this.fetchedCategoryName() ?? formatCategoryName(this.categoryId());
 
   readonly sort = toSignal(
     this.route.queryParamMap.pipe(map((params) => (params.get('sort') as ProductSort) ?? 'relevance')),

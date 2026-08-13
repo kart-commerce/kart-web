@@ -21,6 +21,10 @@ export interface Category {
      */
     ancestorPath?: Array<string>;
     depth: number;
+    /**
+     * Sibling display position; ties broken by name at the read side. Added for the \"Category & Attribute Management (Admin)\" flow.
+     */
+    displayOrder?: number;
     status: Category.StatusEnum;
 }
 export namespace Category {

@@ -32,11 +32,16 @@ export class CartPage {
         }
         this.recheckedSkus.add(item.sku);
         this.productService.getBySku(item.sku).subscribe((product) => {
-          const stillInStock = product?.inStock ?? false;
-          if (stillInStock !== item.inStock) {
-            this.cartService.setAvailability(item.sku, stillInStock);
+          // A fetch failure (network error, transient 5xx) must never be treated as "no longer
+          // in stock" - that's a real, user-visible false positive. Only an actual product
+          // response can move availability; a failed re-check just leaves the last known state.
+          if (!product) {
+            return;
           }
-          if (product && product.price.amount !== item.unitPrice.amount) {
+          if (product.inStock !== item.inStock) {
+            this.cartService.setAvailability(item.sku, product.inStock);
+          }
+          if (product.price.amount !== item.unitPrice.amount) {
             this.cartService.updatePrice(item.sku, product.price);
             this.notificationService.notify(`${item.name}'s price has changed since you added it.`, 'info');
           }

@@ -27,6 +27,14 @@ export interface ProductResponse {
     attributes?: ProductAttributes;
     ratingSummary?: RatingSummary;
     lastUpdatedAt?: string;
+    /**
+     * The parent Product-group\'s id. Added so a caller that only knows a SKU (e.g. kart-admin-service\'s /admin/products/{sku} proxy) can resolve it before calling PATCH /v1/product-groups/{productGroupId}.
+     */
+    productGroupId?: string;
+    /**
+     * A real, loadable photo URL - every product has one (defaulted server-side to a real stock photo if the caller doesn\'t supply one at creation).
+     */
+    imageUrl?: string;
 }
 export namespace ProductResponse {
     export type StatusEnum = 'Active' | 'Discontinued';

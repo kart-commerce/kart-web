@@ -110,26 +110,32 @@ export class ProductService {
     return of(related.slice(0, 4));
   }
 
-  /** Top-rated products across all categories, for the homepage's trending rail. */
+  /** Top-rated real products across all categories, for the homepage's trending rail - the real
+   * `GET /v1/search` (no `q`, sorted by rating), the same source of truth the search bar itself
+   * queries, so a product shown here is always also findable by its own title in search. */
   listFeatured(limit = 8): Observable<readonly ProductSummary[]> {
-    return of(sortProducts(MOCK_PRODUCTS, 'rating').slice(0, limit));
+    return this.searchApi.searchProducts(undefined, undefined, undefined, undefined, undefined, 'rating_desc', 1, limit).pipe(
+      map((response) => response.results.map(toProductSummary)),
+      catchError(() => of([])),
+    );
   }
 
   private toProduct(primary: ProductResponseWithGroup, groupId: string, variants: readonly ProductVariant[]): Product {
     const selfVariant = variants.find((v) => v.sku === primary.sku);
+    const imageUrl = primary.imageUrl || placeholderImage(primary.sku, primary.name);
     return {
       sku: primary.sku,
       groupId,
       name: primary.name,
       brand: primary.brand ?? '',
       categoryId: primary.category.id ?? '',
-      thumbnailUrl: placeholderImage(primary.sku, primary.name),
+      thumbnailUrl: imageUrl,
       price: primary.price,
       ratingAverage: primary.ratingSummary?.avg ?? 0,
       ratingCount: primary.ratingSummary?.count ?? 0,
       inStock: selfVariant?.inStock ?? true,
       description: primary.description ?? '',
-      images: [placeholderImage(primary.sku, primary.name)],
+      images: [imageUrl],
       attributes: attributesRecord(primary.attributes),
       variants,
     };

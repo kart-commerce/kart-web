@@ -6,6 +6,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { DefaultService as CartApi } from '../../../core/http/generated/cart/v1';
 import { CartLineItem } from '../../../core/http/generated/cart/v1/model/cartLineItem';
 import { ProductService } from '../../catalog/data/product.service';
+import { placeholderImage } from '../../../shared/util/placeholder-image';
 import { addMoney, subtractMoney, ZERO_USD } from '../../../shared/util/money';
 import { AppliedCoupon } from '../../pricing-promotions/data/models';
 import { CartItem } from './models';
@@ -186,7 +187,9 @@ export class CartService implements OnDestroy {
       map((product) => ({
         sku: line.sku,
         name: product?.name ?? line.sku,
-        thumbnailUrl: product?.thumbnailUrl ?? '',
+        // A failed re-fetch must never render as a broken `<img>` - fall back to the same
+        // deterministic placeholder ProductService itself uses, never an empty src.
+        thumbnailUrl: product?.thumbnailUrl || placeholderImage(line.sku, product?.name ?? line.sku),
         unitPrice: product?.price ?? ZERO_USD,
         maxQuantity: DEFAULT_MAX_QUANTITY,
         quantity: line.quantity,

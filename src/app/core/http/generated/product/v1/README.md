@@ -1,4 +1,4 @@
-## @kart/product-client@1.0.0
+## @
 
 Catalog system-of-record: product/variant creation and edit (Admin/Partner-API-called write surface) plus the public SKU-keyed catalog read (`GET /v1/products/{sku}`), per requirement-spec.md §5. PostgreSQL is the strongly-consistent write side; MongoDB (`product_read_model`) is the eventually-consistent, denormalized read side (architecture.md). 
 
@@ -23,7 +23,7 @@ Navigate to the folder of your consuming project and run one of next commands.
 _published:_
 
 ```
-npm install @kart/product-client@1.0.0 --save
+npm install @ --save
 ```
 
 _without publishing (not recommended):_
@@ -43,7 +43,7 @@ npm link
 
 In your project:
 ```
-npm link @kart/product-client
+npm link 
 ```
 
 __Note for Windows users:__ The Angular CLI has troubles to use linked npm packages.
@@ -58,7 +58,7 @@ In your Angular project:
 
 ```
 // without configuring providers
-import { ApiModule } from '@kart/product-client';
+import { ApiModule } from '';
 import { HttpClientModule } from '@angular/common/http';
 
 @NgModule({
@@ -77,7 +77,7 @@ export class AppModule {}
 
 ```
 // configuring providers
-import { ApiModule, Configuration, ConfigurationParameters } from '@kart/product-client';
+import { ApiModule, Configuration, ConfigurationParameters } from '';
 
 export function apiConfigFactory (): Configuration {
   const params: ConfigurationParameters = {
@@ -97,7 +97,7 @@ export class AppModule {}
 
 ```
 // configuring providers with an authentication service that manages your access tokens
-import { ApiModule, Configuration } from '@kart/product-client';
+import { ApiModule, Configuration } from '';
 
 @NgModule({
     imports: [ ApiModule ],
@@ -121,7 +121,7 @@ export class AppModule {}
 ```
 
 ```
-import { DefaultApi } from '@kart/product-client';
+import { DefaultApi } from '';
 
 export class AppComponent {
     constructor(private apiGateway: DefaultApi) { }
@@ -159,7 +159,7 @@ export class AppModule {
 If different than the generated base path, during app bootstrap, you can provide the base path to your service.
 
 ```
-import { BASE_PATH } from '@kart/product-client';
+import { BASE_PATH } from '';
 
 bootstrap(AppComponent, [
     { provide: BASE_PATH, useValue: 'https://your-web-service.com' },
@@ -168,7 +168,7 @@ bootstrap(AppComponent, [
 or
 
 ```
-import { BASE_PATH } from '@kart/product-client';
+import { BASE_PATH } from '';
 
 @NgModule({
     imports: [],
@@ -192,7 +192,7 @@ export const environment = {
 
 In the src/app/app.module.ts:
 ```
-import { BASE_PATH } from '@kart/product-client';
+import { BASE_PATH } from '';
 import { environment } from '../environments/environment';
 
 @NgModule({

@@ -26,6 +26,10 @@ export interface SearchResultItem {
     rating: RatingSummary;
     size?: string | null;
     color?: string | null;
+    /**
+     * A real, loadable product photo URL.
+     */
+    imageUrl?: string | null;
 }
 export namespace SearchResultItem {
     export type AvailabilityEnum = 'Active';
