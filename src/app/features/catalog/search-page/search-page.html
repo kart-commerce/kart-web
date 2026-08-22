@@ -1,24 +1,107 @@
 <section class="kart-search-page">
   <h1>Search results for &ldquo;{{ query() }}&rdquo;</h1>
 
-  @if (results(); as items) {
-    @if (items.length === 0) {
-      <div class="kart-search-page__empty">
-        <svg class="kart-search-page__empty-icon" width="96" height="96" viewBox="0 0 96 96" aria-hidden="true" fill="none">
-          <circle cx="42" cy="42" r="26" stroke="currentColor" stroke-width="4" />
-          <line x1="61" y1="61" x2="82" y2="82" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
-        </svg>
-        <p>No products matched &ldquo;{{ query() }}&rdquo;. Try a different search term.</p>
-      </div>
-    } @else {
-      <p class="kart-search-page__count">{{ items.length }} result{{ items.length === 1 ? '' : 's' }}</p>
-      <div class="kart-search-page__grid">
-        @for (product of items; track product.sku) {
-          <kart-product-card [product]="product" />
-        }
-      </div>
-    }
-  } @else {
-    <kart-spinner label="Searching" />
+  @if (truncated()) {
+    <p class="kart-search-page__degraded" role="status">
+      Showing partial results due to high demand right now
+      @if (degradedFacets().length > 0) {
+        — {{ degradedFacets().join(', ') }} filter{{ degradedFacets().length === 1 ? '' : 's' }} temporarily unavailable.
+      }
+    </p>
   }
+
+  <div class="kart-search-page__layout">
+    <aside class="kart-search-page__facets" aria-label="Filter results">
+      @if (facets(); as f) {
+        @if (hasActiveFilters()) {
+          <button type="button" class="kart-search-page__clear" (click)="clearFilters()">Clear filters</button>
+        }
+
+        @if (f.category && f.category.length > 0) {
+          <fieldset class="kart-search-page__facet-group">
+            <legend>Category</legend>
+            @for (bucket of f.category; track bucket.value) {
+              <label class="kart-search-page__facet-option">
+                <input
+                  type="checkbox"
+                  [checked]="selectedCategories().includes(bucket.value)"
+                  (change)="toggleCategory(bucket.value)"
+                />
+                {{ bucket.value }} <span class="kart-search-page__facet-count">({{ bucket.count }})</span>
+              </label>
+            }
+          </fieldset>
+        }
+
+        @if (f.price && f.price.length > 0) {
+          <fieldset class="kart-search-page__facet-group">
+            <legend>Price</legend>
+            @for (bucket of f.price; track bucket.value) {
+              <label class="kart-search-page__facet-option">
+                <input type="radio" name="price-facet" [checked]="selectedPriceBucket() === bucket.value" (change)="selectPriceBucket(bucket.value)" />
+                {{ bucket.value }} <span class="kart-search-page__facet-count">({{ bucket.count }})</span>
+              </label>
+            }
+          </fieldset>
+        }
+
+        @if (f.rating && f.rating.length > 0) {
+          <fieldset class="kart-search-page__facet-group">
+            <legend>Rating</legend>
+            @for (bucket of f.rating; track bucket.value) {
+              <label class="kart-search-page__facet-option">
+                <input type="radio" name="rating-facet" [checked]="selectedRatingBucket() === bucket.value" (change)="selectRatingBucket(bucket.value)" />
+                {{ bucket.value }}+ stars <span class="kart-search-page__facet-count">({{ bucket.count }})</span>
+              </label>
+            }
+          </fieldset>
+        }
+      }
+    </aside>
+
+    <div class="kart-search-page__results">
+      <div class="kart-search-page__toolbar">
+        @if (items(); as items) {
+          <p class="kart-search-page__count">
+            {{ pagination()?.totalHits ?? items.length }}{{ pagination()?.totalHitsIsApproximate ? '+' : '' }}
+            result{{ (pagination()?.totalHits ?? items.length) === 1 ? '' : 's' }}
+          </p>
+        }
+        <label class="kart-search-page__sort">
+          Sort by
+          <select kartInput [value]="selectedSort()" (change)="changeSort($any($event.target).value)">
+            <option value="relevance">Relevance</option>
+            <option value="price_asc">Price: low to high</option>
+            <option value="price_desc">Price: high to low</option>
+            <option value="rating_desc">Highest rated</option>
+          </select>
+        </label>
+      </div>
+
+      @if (items(); as items) {
+        @if (items.length === 0) {
+          <div class="kart-search-page__empty">
+            <svg class="kart-search-page__empty-icon" width="96" height="96" viewBox="0 0 96 96" aria-hidden="true" fill="none">
+              <circle cx="42" cy="42" r="26" stroke="currentColor" stroke-width="4" />
+              <line x1="61" y1="61" x2="82" y2="82" stroke="currentColor" stroke-width="4" stroke-linecap="round" />
+            </svg>
+            @if (hasActiveFilters()) {
+              <p>No products matched &ldquo;{{ query() }}&rdquo; with the selected filters.</p>
+              <button type="button" class="kart-search-page__clear" (click)="clearFilters()">Clear filters</button>
+            } @else {
+              <p>No products matched &ldquo;{{ query() }}&rdquo;. Try a different search term.</p>
+            }
+          </div>
+        } @else {
+          <div class="kart-search-page__grid">
+            @for (product of items; track product.sku) {
+              <kart-product-card [product]="product" />
+            }
+          </div>
+        }
+      } @else {
+        <kart-spinner label="Searching" />
+      }
+    </div>
+  </div>
 </section>

@@ -7,13 +7,18 @@ import { ProductCard } from '../product-card/product-card';
 import { RecommendationService } from '../data/recommendation.service';
 
 /**
- * WEB-17 — meant to be instantiated only inside an `@defer (on viewport)` block (product-page.html):
- * Angular never runs a deferred block's content during SSR by default, so this component's
- * constructor-time fetch genuinely only happens client-side at the real trigger moment —
- * never reusing an SSR-time value, per design-decisions.md's "TransferState Trust Boundary."
- * `RecommendationService` itself fails open on error (see that service's own doc comment);
- * this component adds nothing on top except rendering an empty state when there's simply
- * nothing to show, never a visible error.
+ * WEB-17 — meant to be instantiated only inside an `@defer (on viewport)` block: Angular never
+ * runs a deferred block's content during SSR by default, so this component's constructor-time
+ * fetch genuinely only happens client-side at the real trigger moment — never reusing an
+ * SSR-time value, per design-decisions.md's "TransferState Trust Boundary." `RecommendationService`
+ * itself fails open on error/no-session (see that service's own doc comment); this component adds
+ * nothing on top except rendering an empty state when there's simply nothing to show, never a
+ * visible error.
+ *
+ * Used across three placements — PDP (`excludeSkus: [product.sku]`), the home page
+ * (`excludeSkus` empty), and post-purchase order confirmation/detail (`excludeSkus`: every sku in
+ * the order just placed) — the backend has no per-placement concept (getRecommendationsForUser
+ * only takes userId/limit), so "placement" is entirely a client-side exclusion-list concern.
  */
 @Component({
   selector: 'kart-product-recommendations',
@@ -42,16 +47,22 @@ export class ProductRecommendations {
   private readonly recommendationService = inject(RecommendationService);
   private readonly authService = inject(AuthService);
 
-  readonly sku = input.required<string>();
+  /** Skus to hide from the rendered list — the current PDP's own sku, every item in a just-placed order, or empty on the home page. */
+  readonly excludeSkus = input<readonly string[]>([]);
+  readonly limit = input(8);
 
   private readonly recommendations = toSignal(
-    toObservable(this.sku).pipe(
-      switchMap(() =>
-        this.recommendationService.listForUser(this.authService.session()?.authenticated ? 'current-user' : null),
-      ),
+    toObservable(this.limit).pipe(
+      switchMap((limit) => {
+        const session = this.authService.session();
+        return this.recommendationService.listForUser(session?.authenticated ? session.userId ?? null : null, limit);
+      }),
     ),
     { initialValue: [] },
   );
 
-  readonly related = computed(() => this.recommendations().filter((product) => product.sku !== this.sku()));
+  readonly related = computed(() => {
+    const exclude = this.excludeSkus();
+    return this.recommendations().filter((product) => !exclude.includes(product.sku));
+  });
 }

@@ -151,6 +151,17 @@
       }
     }
 
+    <kart-card class="kart-order-detail__recommendations">
+      <h2>You might also like</h2>
+      @defer (on viewport) {
+        <kart-product-recommendations [excludeSkus]="order.items.map((item) => item.sku)" [limit]="4" />
+      } @placeholder {
+        <p>Recommendations load as you scroll…</p>
+      } @loading (minimum 200ms) {
+        <kart-spinner label="Loading recommendations" />
+      }
+    </kart-card>
+
     <a class="kart-order-detail__back" routerLink="/orders">View order history</a>
   </article>
 } @else {

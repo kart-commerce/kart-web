@@ -2,9 +2,10 @@
   <h1>Your account</h1>
 
   <nav class="kart-profile-page__subnav" aria-label="Account sections">
-    <a routerLink="/account/profile">Profile</a>
+    <a routerLink="/account/profile" aria-current="page">Profile</a>
     <a routerLink="/account/security">Security</a>
     <a routerLink="/account/privacy">Privacy</a>
+    <a routerLink="/account/notifications">Notifications</a>
   </nav>
 
   @if (loadError()) {
@@ -50,17 +51,10 @@
           </select>
         </kart-form-field>
 
-        <fieldset class="kart-profile-page__notifications">
-          <legend>Notifications</legend>
-          <label><input type="checkbox" formControlName="notifyEmail" /> Email</label>
-          <label><input type="checkbox" formControlName="notifySms" /> SMS</label>
-          <label><input type="checkbox" formControlName="notifyPush" /> Push</label>
-        </fieldset>
-
-        <label class="kart-profile-page__marketing">
-          <input type="checkbox" formControlName="marketingConsent" />
-          Send me marketing emails and promotions
-        </label>
+        <p class="kart-profile-page__hint">
+          Manage email/SMS/push channels and marketing consent on the
+          <a routerLink="/account/notifications">Notifications</a> page.
+        </p>
 
         @if (saved()) {
           <p class="kart-profile-page__saved">Preferences saved.</p>

@@ -3,7 +3,9 @@ import { RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 
+import { Spinner } from '../../../shared/ui';
 import { ProductCard } from '../product-card/product-card';
+import { ProductRecommendations } from '../product-recommendations/product-recommendations';
 import { ProductService } from '../data/product.service';
 import { CategoryNavService } from '../category-nav/category-nav.service';
 
@@ -32,7 +34,7 @@ const FEATURED_CATEGORY_COUNT = 4;
 /** Storefront landing page — hero, category shortcuts, and a trending-products rail. */
 @Component({
   selector: 'kart-home-page',
-  imports: [RouterLink, ProductCard],
+  imports: [RouterLink, ProductCard, ProductRecommendations, Spinner],
   templateUrl: './home-page.html',
   styleUrl: './home-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

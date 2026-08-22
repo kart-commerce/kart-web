@@ -1,6 +1,92 @@
+.kart-search-page__degraded {
+  color: var(--kart-color-text-muted);
+  background: var(--kart-color-surface-muted, transparent);
+  border: 1px solid var(--kart-color-border);
+  border-radius: var(--kart-radius-md, 4px);
+  padding: var(--kart-spacing-sm) var(--kart-spacing-md);
+  margin-bottom: var(--kart-spacing-lg);
+}
+
+.kart-search-page__layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: var(--kart-spacing-xl);
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .kart-search-page__layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kart-search-page__facets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-lg);
+}
+
+.kart-search-page__facet-group {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-xs);
+}
+
+.kart-search-page__facet-group legend {
+  font-weight: 600;
+  margin-bottom: var(--kart-spacing-xs);
+}
+
+.kart-search-page__facet-option {
+  display: flex;
+  align-items: center;
+  gap: var(--kart-spacing-xs);
+  font-size: var(--kart-font-size-caption);
+  cursor: pointer;
+}
+
+.kart-search-page__facet-count {
+  color: var(--kart-color-text-muted);
+}
+
+.kart-search-page__clear {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--kart-color-accent, var(--kart-color-text-muted));
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: var(--kart-font-size-caption);
+}
+
+.kart-search-page__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kart-spacing-md);
+  margin-bottom: var(--kart-spacing-lg);
+}
+
 .kart-search-page__count {
   color: var(--kart-color-text-muted);
-  margin-bottom: var(--kart-spacing-lg);
+  margin: 0;
+}
+
+.kart-search-page__sort {
+  display: flex;
+  align-items: center;
+  gap: var(--kart-spacing-sm);
+  font-size: var(--kart-font-size-caption);
+  color: var(--kart-color-text-muted);
+}
+
+.kart-search-page__sort select {
+  width: auto;
 }
 
 .kart-search-page__empty {

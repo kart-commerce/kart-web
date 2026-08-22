@@ -53,4 +53,9 @@ export const accountRoutes: Routes = [
     canActivate: [authenticatedGuard],
     loadComponent: () => import('./privacy/privacy-page').then((m) => m.PrivacyPage),
   },
+  {
+    path: 'notifications',
+    canActivate: [authenticatedGuard],
+    loadComponent: () => import('./notifications/notifications-page').then((m) => m.NotificationsPage),
+  },
 ];

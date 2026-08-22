@@ -9,6 +9,7 @@ import { MoneyPipe } from '../../../shared/util';
 import { CurrencyService } from '../../../core/i18n/currency.service';
 import { FeatureFlagsStore } from '../../../core/config/feature-flags.store';
 import { RealtimeConnectionManager } from '../../../core/realtime/realtime-connection-manager';
+import { ProductRecommendations } from '../../catalog/product-recommendations/product-recommendations';
 import { OrderService, ReturnRequestConflictError } from '../data/order.service';
 import {
   ORDER_STATUS_LABELS,
@@ -35,7 +36,7 @@ const POLL_INTERVAL_MS = 15_000;
  */
 @Component({
   selector: 'kart-order-detail-page',
-  imports: [RouterLink, DatePipe, KeyValuePipe, Badge, Button, Card, ComingSoon, Spinner, MoneyPipe],
+  imports: [RouterLink, DatePipe, KeyValuePipe, Badge, Button, Card, ComingSoon, Spinner, MoneyPipe, ProductRecommendations],
   templateUrl: './order-detail-page.html',
   styleUrl: './order-detail-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

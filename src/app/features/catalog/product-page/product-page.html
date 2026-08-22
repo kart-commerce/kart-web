@@ -121,7 +121,7 @@
     <section class="kart-pdp__related">
       <h2>You might also like</h2>
       @defer (on viewport) {
-        <kart-product-recommendations [sku]="product.sku" />
+        <kart-product-recommendations [excludeSkus]="[product.sku]" />
       } @placeholder {
         <p class="kart-pdp__defer-placeholder">Recommendations load as you scroll…</p>
       } @loading (minimum 200ms) {
