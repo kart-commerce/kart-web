@@ -1,0 +1,68 @@
+<section class="kart-profile-page">
+  <h1>Your account</h1>
+
+  <nav class="kart-profile-page__subnav" aria-label="Account sections">
+    <a routerLink="/account/profile" aria-current="page">Profile</a>
+    <a routerLink="/account/security">Security</a>
+    <a routerLink="/account/privacy">Privacy</a>
+    <a routerLink="/account/notifications">Notifications</a>
+  </nav>
+
+  @if (loadError()) {
+    <kart-alert variant="danger">{{ loadError() }}</kart-alert>
+  }
+
+  @if (profile(); as p) {
+    <kart-card class="kart-profile-page__section">
+      <h2>Profile</h2>
+      <p>{{ p.displayName || 'No display name set' }}</p>
+      <p class="kart-profile-page__email">{{ p.email }}</p>
+      <p class="kart-profile-page__hint">
+        Can't self-edit a field?
+        <a routerLink="/account/privacy">Request a correction</a>.
+      </p>
+    </kart-card>
+
+    <kart-card class="kart-profile-page__section">
+      <h2>Addresses</h2>
+      <kart-address-book
+        [addresses]="p.addresses"
+        (added)="addAddress($event)"
+        (updated)="updateAddress($event)"
+        (removed)="removeAddress($event)"
+      />
+    </kart-card>
+
+    <kart-card class="kart-profile-page__section">
+      <h2>Preferences</h2>
+      <form [formGroup]="preferencesForm" (ngSubmit)="savePreferences()">
+        <kart-form-field label="Language" inputId="pref-locale">
+          <select kartInput id="pref-locale" formControlName="locale">
+            @for (locale of locales; track locale) {
+              <option [value]="locale">{{ localeLabels[locale] }}</option>
+            }
+          </select>
+        </kart-form-field>
+        <kart-form-field label="Currency" inputId="pref-currency">
+          <select kartInput id="pref-currency" formControlName="currency">
+            @for (currency of currencies; track currency) {
+              <option [value]="currency">{{ currency }}</option>
+            }
+          </select>
+        </kart-form-field>
+
+        <p class="kart-profile-page__hint">
+          Manage email/SMS/push channels and marketing consent on the
+          <a routerLink="/account/notifications">Notifications</a> page.
+        </p>
+
+        @if (saved()) {
+          <p class="kart-profile-page__saved">Preferences saved.</p>
+        }
+        <kart-button type="submit" [loading]="saving()">Save preferences</kart-button>
+      </form>
+    </kart-card>
+  } @else if (!loading()) {
+    <p>We couldn't load your account. Please try again later.</p>
+  }
+</section>

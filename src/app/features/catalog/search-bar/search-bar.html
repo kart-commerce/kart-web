@@ -1,11 +1,33 @@
 <form class="kart-search-bar" role="search" (submit)="submit($event)">
-  <input
-    #input
-    class="kart-search-bar__input"
-    type="search"
-    name="q"
-    placeholder="Search products, brands, and categories"
-    aria-label="Search"
-  />
+  <div class="kart-search-bar__field">
+    <input
+      #input
+      class="kart-search-bar__input"
+      type="search"
+      name="q"
+      placeholder="Search products, brands, and categories"
+      aria-label="Search"
+      autocomplete="off"
+      role="combobox"
+      [attr.aria-expanded]="suggestionsOpen()"
+      aria-controls="search-suggestions"
+      (input)="onInput($any($event.target).value)"
+      (focus)="onInput($any($event.target).value)"
+      (blur)="closeSuggestions()"
+    />
+
+    @if (suggestionsOpen() && suggestions().length > 0) {
+      <ul class="kart-search-bar__suggestions" id="search-suggestions" role="listbox">
+        @for (suggestion of suggestions(); track suggestion.sku) {
+          <li role="option" aria-selected="false">
+            <button type="button" (click)="selectSuggestion(suggestion.sku)">
+              <img [src]="suggestion.thumbnailUrl" alt="" width="28" height="28" />
+              <span>{{ suggestion.name }}</span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </div>
   <button type="submit" class="kart-search-bar__submit" aria-label="Submit search">Search</button>
 </form>

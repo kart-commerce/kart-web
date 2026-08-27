@@ -2,19 +2,37 @@
   <div class="kart-category-page__header">
     <h1>{{ categoryName() }}</h1>
 
-    <label class="kart-category-page__sort">
-      Sort by
-      <select
-        kartInput
-        [value]="sort()"
-        (change)="changeSort($any($event.target).value)"
-      >
-        <option value="relevance">Relevance</option>
-        <option value="price-asc">Price: low to high</option>
-        <option value="price-desc">Price: high to low</option>
-        <option value="rating">Customer rating</option>
-      </select>
-    </label>
+    <div class="kart-category-page__controls">
+      @if (availableBrands().length > 1) {
+        <label class="kart-category-page__sort">
+          Brand
+          <select
+            kartInput
+            [value]="selectedBrand() ?? ''"
+            (change)="changeBrand($any($event.target).value || null)"
+          >
+            <option value="">All brands</option>
+            @for (brand of availableBrands(); track brand) {
+              <option [value]="brand">{{ brand }}</option>
+            }
+          </select>
+        </label>
+      }
+
+      <label class="kart-category-page__sort">
+        Sort by
+        <select
+          kartInput
+          [value]="sort()"
+          (change)="changeSort($any($event.target).value)"
+        >
+          <option value="relevance">Relevance</option>
+          <option value="price-asc">Price: low to high</option>
+          <option value="price-desc">Price: high to low</option>
+          <option value="rating">Customer rating</option>
+        </select>
+      </label>
+    </div>
   </div>
 
   @if (products(); as items) {

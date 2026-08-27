@@ -1,17 +1,31 @@
 <nav class="kart-category-nav" aria-label="Category navigation">
-  @if (loadFailed()) {
-    <p class="kart-category-nav__error">Categories are unavailable right now.</p>
-  } @else if (tree(); as categories) {
-    @if (categories.length === 0) {
-      <p class="kart-category-nav__empty">No categories yet.</p>
-    } @else {
-      <ul class="kart-category-nav__list">
-        @for (category of categories; track category.categoryId) {
-          <kart-category-nav-item [node]="category" />
+  <button
+    type="button"
+    class="kart-category-nav__trigger"
+    [attr.aria-expanded]="open()"
+    (click)="toggleOpen()"
+  >
+    Categories
+    <span class="kart-category-nav__trigger-icon" [class.kart-category-nav__trigger-icon--open]="open()">▾</span>
+  </button>
+
+  @if (open()) {
+    <div class="kart-category-nav__panel">
+      @if (loadFailed()) {
+        <p class="kart-category-nav__error">Categories are unavailable right now.</p>
+      } @else if (tree(); as categories) {
+        @if (categories.length === 0) {
+          <p class="kart-category-nav__empty">No categories yet.</p>
+        } @else {
+          <ul class="kart-category-nav__list">
+            @for (category of categories; track category.categoryId) {
+              <kart-category-nav-item [node]="category" />
+            }
+          </ul>
         }
-      </ul>
-    }
-  } @else {
-    <kart-spinner label="Loading categories" />
+      } @else {
+        <kart-spinner label="Loading categories" />
+      }
+    </div>
   }
 </nav>

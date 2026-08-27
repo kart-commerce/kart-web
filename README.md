@@ -25,10 +25,10 @@ This build covers **Release 0** (repo shell, SSR/hydration bootstrap, `@kart/des
 | Variable | Default | Used by |
 |---|---|---|
 | `PORT` | `4000` | SSR server listen port |
-| `REDIS_URL` | `redis://localhost:6379` | BFF session store |
+| `REDIS_URL` | `redis://localhost:6380` | BFF session store — 6380 is `kart-devops/docker-compose.yml`'s host-mapped port for its shared Redis container (6379 is commonly already bound by a local Redis install); point at 6379 instead for your own standalone Redis |
 | `SESSION_TTL_SECONDS` | `7776000` (90 days) | BFF session store + cookie `Max-Age` — matches `security.md`'s native-login absolute session cap |
-| `IDENTITY_SERVICE_BASE_URL` | `http://localhost:5200` | BFF → kart-identity-service (server-to-server only; browser never talks to it directly) |
-| `GATEWAY_BASE_URL` | `http://localhost:5263` | Angular app's generated clients (currently just kart-category-service's local dev port — `kart-api-gateway` is still a routing skeleton as of Release 0/1, so this points directly at the service; repoint once the gateway actually routes `/v1/categories`) |
+| `IDENTITY_SERVICE_BASE_URL` | `http://localhost:8081` | BFF → kart-identity-service (server-to-server only; browser never talks to it directly). Port 8081 is kart-identity-service's own local dev port (its `launchSettings.json` http profile) — the same host port `kart-devops/docker-compose.yml` maps it to |
+| `GATEWAY_BASE_URL` | `http://localhost:8100` | Angular app's generated clients' base URL — kart-api-gateway's own local dev port (its `launchSettings.json` http profile), matching `kart-devops/docker-compose.yml`'s host port for it |
 | `NG_ALLOWED_HOSTS` | *(none — blocks all hosts)* | Angular SSR's built-in Host-header SSRF guard. **Required** for any real request to succeed — set to the hostname(s) you're serving on, e.g. `NG_ALLOWED_HOSTS=localhost` for local dev. |
 | `NODE_ENV` | *(unset)* | `production` makes the session cookie `Secure` (requires HTTPS) |
 
@@ -36,8 +36,8 @@ This build covers **Release 0** (repo shell, SSR/hydration bootstrap, `@kart/des
 
 ```bash
 npm ci
-REDIS_URL=redis://localhost:6379 NG_ALLOWED_HOSTS=localhost npm run build
-REDIS_URL=redis://localhost:6379 NG_ALLOWED_HOSTS=localhost node dist/kart-web/server/server.mjs
+REDIS_URL=redis://localhost:6380 NG_ALLOWED_HOSTS=localhost npm run build
+REDIS_URL=redis://localhost:6380 NG_ALLOWED_HOSTS=localhost node dist/kart-web/server/server.mjs
 ```
 
 Or `npm start` for the CSR dev server (no SSR/BFF routes — fine for iterating on component templates, but auth/category-nav need the real server above).
@@ -87,7 +87,8 @@ dotnet ef database update \
   --project src/Infrastructure/KartCategoryService.Infrastructure.csproj \
   --startup-project src/Api/KartCategoryService.Api.csproj
 dotnet run --project src/Api/KartCategoryService.Api.csproj
-# listens on http://localhost:5263 (its launchSettings.json http profile)
+# listens on http://localhost:8084 (its launchSettings.json http profile — the same host
+# port kart-devops/docker-compose.yml maps it to)
 ```
 
 RabbitMQ is optional to boot the service (topology/outbox-relay failures are logged, not fatal) but required for it to actually publish `CategoryUpdated`.

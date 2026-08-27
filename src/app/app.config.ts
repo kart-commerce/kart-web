@@ -1,18 +1,20 @@
 import {
   ApplicationConfig,
-  inject,
+  isDevMode,
   provideBrowserGlobalErrorListeners,
   provideZonelessChangeDetection,
 } from '@angular/core';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { provideClientHydration, withHttpTransferCacheOptions } from '@angular/platform-browser';
+import { provideServiceWorker } from '@angular/service-worker';
 
 import { routes } from './app.routes';
-import { APP_CONFIG } from './core/config/app-config';
 import { provideAppConfig } from './core/config/app-config.provider';
+import { provideFeatureFlags } from './core/config/feature-flags.provider';
 import { authInterceptor } from './core/auth/auth.interceptor';
-import { BASE_PATH } from './core/http/generated/category/v1/variables';
+import { guestSessionInterceptor } from './core/auth/guest-session.interceptor';
+import { provideGeneratedApiClients } from './core/http/generated-clients.provider';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -20,13 +22,18 @@ export const appConfig: ApplicationConfig = {
     provideZonelessChangeDetection(),
     provideRouter(routes),
     provideClientHydration(withHttpTransferCacheOptions({ includePostRequests: false })),
-    provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([authInterceptor, guestSessionInterceptor])),
     provideAppConfig(),
-    // Generated clients (core/http/generated/**) read their base URL from this
-    // token — kept in lockstep with AppConfig.gatewayBaseUrl rather than each
-    // generated client's own hardcoded default. `/v1` is appended here (not
-    // baked into gatewayBaseUrl) since every kart service contract's own
-    // `servers: - url: /v1` is what the generator's relative paths assume.
-    { provide: BASE_PATH, useFactory: () => `${inject(APP_CONFIG).gatewayBaseUrl}/v1` },
+    provideFeatureFlags(),
+    // One BASE_PATH provider per generated client (WEB-3) — see
+    // generated-clients.provider.ts for the server-vs-browser base-URL rule
+    // every one of them shares.
+    ...provideGeneratedApiClients(),
+    // WEB-12: PWA installability. No-op outside a browser context (SSR has
+    // no `navigator.serviceWorker`), so this is safe in the shared config.
+    provideServiceWorker('ngsw-worker.js', {
+      enabled: !isDevMode(),
+      registrationStrategy: 'registerWhenStable:30000',
+    }),
   ],
 };

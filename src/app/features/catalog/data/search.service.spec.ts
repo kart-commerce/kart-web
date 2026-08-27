@@ -1,50 +1,123 @@
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
+import { SearchResponse } from '../../../core/http/generated/search/v1/model/searchResponse';
 import { SearchService } from './search.service';
+
+function searchResponse(results: SearchResponse['results']): SearchResponse {
+  return {
+    results,
+    facets: { category: [], price: [], rating: [] },
+    pagination: { page: 1, size: 20, totalHits: results.length, totalHitsIsApproximate: false },
+    truncated: false,
+  };
+}
 
 describe('SearchService', () => {
   let service: SearchService;
+  let httpMock: HttpTestingController;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
+    httpMock = TestBed.inject(HttpTestingController);
     service = TestBed.inject(SearchService);
   });
 
-  it('returns no results for a blank query', (done) => {
-    service.search('   ').subscribe((results) => {
-      expect(results).toEqual([]);
-      done();
-    });
+  afterEach(() => httpMock.verify());
+
+  it('returns no results for a blank query without calling the backend', () => {
+    let results: unknown;
+    service.search('   ').subscribe((r) => (results = r));
+    expect(results).toEqual([]);
   });
 
-  it('matches on product name', (done) => {
-    service.search('aura').subscribe((results) => {
-      expect(results.some((product) => product.sku === 'PHN-AURA-256-BLK')).toBeTrue();
-      done();
-    });
+  it('calls the real GET /v1/search and maps results to ProductSummary', () => {
+    let results: readonly { sku: string; name: string; brand: string }[] = [];
+    service.search('aura').subscribe((r) => (results = r));
+
+    const req = httpMock.expectOne((r) => r.method === 'GET' && r.url.includes('/search'));
+    req.flush(
+      searchResponse([
+        {
+          sku: 'PHN-AURA-256-BLK',
+          name: 'Aura Phone 15 Pro',
+          brand: 'Nova',
+          category: { categoryId: 'electronics' },
+          price: { amount: 999, currency: 'USD' },
+          availability: 'Active',
+          rating: { avg: 4.6, count: 2140 },
+        },
+      ]),
+    );
+
+    expect(results.length).toBe(1);
+    expect(results[0].sku).toBe('PHN-AURA-256-BLK');
+    expect(results[0].brand).toBe('Nova');
   });
 
-  it('matches on brand', (done) => {
-    service.search('sonique').subscribe((results) => {
-      expect(results.every((product) => product.brand === 'Sonique')).toBeTrue();
-      expect(results.length).toBeGreaterThan(0);
-      done();
-    });
+  it('returns an empty result set rather than throwing when the backend errors', () => {
+    let results: unknown;
+    service.search('anything').subscribe((r) => (results = r));
+
+    httpMock.expectOne((r) => r.method === 'GET' && r.url.includes('/search')).flush('boom', { status: 500, statusText: 'Server Error' });
+
+    expect(results).toEqual([]);
   });
 
-  it('ranks name matches above brand matches', (done) => {
-    service.search('nova').subscribe((results) => {
-      // "Nova" is a brand for several products; none of their names contain "nova",
-      // so this just confirms brand-only matches are still returned.
-      expect(results.length).toBeGreaterThan(0);
-      done();
-    });
-  });
+  describe('searchWithFacets', () => {
+    it('forwards category/price/rating/sort/page/size filters as real query params', () => {
+      service.searchWithFacets('aura', { category: ['electronics'], priceMin: 100, priceMax: 500, ratingMin: 4, sort: 'price_asc', page: 2, size: 10 }).subscribe();
 
-  it('returns nothing for a query that matches no product', (done) => {
-    service.search('xyzzy-not-a-real-product').subscribe((results) => {
-      expect(results).toEqual([]);
-      done();
+      const req = httpMock.expectOne(
+        (r) =>
+          r.method === 'GET' &&
+          r.url.includes('/search') &&
+          r.params.get('q') === 'aura' &&
+          r.params.getAll('category')?.includes('electronics') === true &&
+          r.params.get('priceMin') === '100' &&
+          r.params.get('priceMax') === '500' &&
+          r.params.get('ratingMin') === '4' &&
+          r.params.get('sort') === 'price_asc' &&
+          r.params.get('page') === '2' &&
+          r.params.get('size') === '10',
+      );
+      req.flush(searchResponse([]));
+    });
+
+    it('surfaces facets, pagination, truncated, and degradedFacets rather than dropping them', () => {
+      let result: { facets: unknown; pagination: unknown; truncated: boolean; degradedFacets: readonly string[] } | undefined;
+      service.searchWithFacets('aura').subscribe((r) => (result = r));
+
+      const req = httpMock.expectOne((r) => r.method === 'GET' && r.url.includes('/search'));
+      req.flush({
+        results: [],
+        facets: { category: [{ value: 'electronics', count: 12 }], price: [], rating: [] },
+        pagination: { page: 1, size: 20, totalHits: 12, totalHitsIsApproximate: false },
+        truncated: true,
+        degradedFacets: ['rating'],
+      });
+
+      expect(result?.facets).toEqual({ category: [{ value: 'electronics', count: 12 }], price: [], rating: [] });
+      expect(result?.pagination).toEqual({ page: 1, size: 20, totalHits: 12, totalHitsIsApproximate: false });
+      expect(result?.truncated).toBe(true);
+      expect(result?.degradedFacets).toEqual(['rating']);
+    });
+
+    it('returns an empty result (never throws) when the backend errors', () => {
+      let result: { items: readonly unknown[] } | undefined;
+      service.searchWithFacets('anything').subscribe((r) => (result = r));
+
+      httpMock.expectOne((r) => r.method === 'GET' && r.url.includes('/search')).flush('boom', { status: 500, statusText: 'Server Error' });
+
+      expect(result?.items).toEqual([]);
+    });
+
+    it('short-circuits to an empty result for a blank query without calling the backend', () => {
+      let result: { items: readonly unknown[] } | undefined;
+      service.searchWithFacets('   ').subscribe((r) => (result = r));
+
+      expect(result?.items).toEqual([]);
     });
   });
 });

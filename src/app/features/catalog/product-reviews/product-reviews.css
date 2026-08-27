@@ -1,0 +1,40 @@
+.kart-product-reviews {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-md);
+}
+
+.kart-product-reviews__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-sm);
+  max-width: 480px;
+}
+
+.kart-product-reviews__item {
+  border-top: 1px solid var(--kart-color-border);
+  padding-top: var(--kart-spacing-sm);
+}
+
+.kart-product-reviews__item--pending {
+  border: 1px dashed var(--kart-color-warning);
+  border-radius: var(--kart-radius-md);
+  padding: var(--kart-spacing-sm);
+}
+
+.kart-product-reviews__item-header {
+  display: flex;
+  align-items: center;
+  gap: var(--kart-spacing-sm);
+  margin-bottom: var(--kart-spacing-xs);
+}
+
+.kart-product-reviews__meta {
+  color: var(--kart-color-text-muted);
+  font-size: var(--kart-font-size-caption);
+  margin: 0;
+}
+
+.kart-product-reviews__empty {
+  color: var(--kart-color-text-muted);
+}

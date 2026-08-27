@@ -1,0 +1,70 @@
+<section class="kart-notifications-page">
+  <h1>Your account</h1>
+
+  <nav class="kart-notifications-page__subnav" aria-label="Account sections">
+    <a routerLink="/account/profile">Profile</a>
+    <a routerLink="/account/security">Security</a>
+    <a routerLink="/account/privacy">Privacy</a>
+    <a routerLink="/account/notifications" aria-current="page">Notifications</a>
+  </nav>
+
+  @if (loadError()) {
+    <kart-alert variant="danger">{{ loadError() }}</kart-alert>
+  }
+
+  @if (profile()) {
+    <kart-card class="kart-notifications-page__section">
+      <h2>Notification channels</h2>
+      <p class="kart-notifications-page__hint">
+        These channels apply to every notification we send you — order updates, shipment and delivery
+        status, price-drop alerts on your wishlist, and (if you opt in below) promotions. Per-notification-type
+        control isn't available yet; turning a channel on/off applies to all notifications sent through it.
+      </p>
+
+      <form [formGroup]="preferencesForm" (ngSubmit)="save()">
+        <fieldset class="kart-notifications-page__channels">
+          <legend>Channels</legend>
+
+          <label class="kart-notifications-page__channel">
+            <input type="checkbox" formControlName="notifyEmail" />
+            <span>
+              <strong>Email</strong>
+              <small>Order confirmations, shipping updates, price-drop alerts, and account notices.</small>
+            </span>
+          </label>
+
+          <label class="kart-notifications-page__channel">
+            <input type="checkbox" formControlName="notifySms" />
+            <span>
+              <strong>SMS</strong>
+              <small>Time-sensitive delivery updates (dispatched, out for delivery, delivered).</small>
+            </span>
+          </label>
+
+          <label class="kart-notifications-page__channel">
+            <input type="checkbox" formControlName="notifyPush" />
+            <span>
+              <strong>Push</strong>
+              <small>Browser/app push for the same events as email, if you've enabled push in this browser.</small>
+            </span>
+          </label>
+        </fieldset>
+
+        <label class="kart-notifications-page__marketing">
+          <input type="checkbox" formControlName="marketingConsent" />
+          <span>
+            <strong>Marketing</strong>
+            <small>Promotions, campaigns, and product recommendations — separate from the transactional channels above.</small>
+          </span>
+        </label>
+
+        @if (saved()) {
+          <p class="kart-notifications-page__saved">Notification preferences saved.</p>
+        }
+        <kart-button type="submit" [loading]="saving()">Save preferences</kart-button>
+      </form>
+    </kart-card>
+  } @else if (!loading()) {
+    <p>We couldn't load your notification preferences. Please try again later.</p>
+  }
+</section>

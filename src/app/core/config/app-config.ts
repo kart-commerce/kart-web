@@ -1,5 +1,7 @@
 import { InjectionToken, makeStateKey } from '@angular/core';
 
+import { SERVICE_ENDPOINTS } from './service-endpoints';
+
 /**
  * Runtime, environment-driven configuration — resolved server-side from
  * process.env at request time (never baked into the build), and carried to
@@ -13,17 +15,16 @@ export interface AppConfig {
   /**
    * Base URL of kart-api-gateway, the app's only sync backend dependency for
    * Angular-level (browser + SSR universal) HTTP calls — e.g. the generated
-   * category-service client. Defaults to kart-category-service's own local
-   * dev port (its README's http launch profile) since kart-api-gateway is
-   * only a routing skeleton as of Release 0/1 (no real route table to point
-   * at yet); override via GATEWAY_BASE_URL once the gateway actually routes
-   * `/v1/categories` requests.
+   * category-service client. Defaults to kart-api-gateway's own local dev
+   * port (its launchSettings.json http profile — the same host port
+   * kart-devops/docker-compose.yml maps it to); override via
+   * GATEWAY_BASE_URL for a deployed environment.
    */
   readonly gatewayBaseUrl: string;
 }
 
 export const DEFAULT_APP_CONFIG: AppConfig = {
-  gatewayBaseUrl: 'http://localhost:5263',
+  gatewayBaseUrl: SERVICE_ENDPOINTS.gateway,
 };
 
 export const APP_CONFIG = new InjectionToken<AppConfig>('APP_CONFIG');

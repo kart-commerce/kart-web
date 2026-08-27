@@ -1,0 +1,53 @@
+<section class="kart-privacy-page">
+  <h1>Privacy</h1>
+
+  <kart-card class="kart-privacy-page__section">
+    <h2>Download my data</h2>
+    <p>Get a copy of the personal data associated with your account (GDPR Access &amp; Export).</p>
+
+    @if (!exportEnabled) {
+      <kart-coming-soon title="Data export" message="Downloadable data exports are launching soon." />
+    } @else if (exportResult(); as result) {
+      <kart-alert variant="success">
+        We're preparing your export — you'll get a download link by email within about a day
+        (requested {{ result.requestedAt | date: 'medium' }}).
+      </kart-alert>
+    } @else {
+      <kart-button [loading]="exporting()" (click)="requestExport()">Request my data</kart-button>
+    }
+  </kart-card>
+
+  <kart-card class="kart-privacy-page__section">
+    <h2>Delete my account</h2>
+    <p>This permanently deletes your account. It cannot be undone.</p>
+
+    @if (!deleteConfirming()) {
+      <kart-button variant="danger" (click)="startDeleteConfirmation()">Delete my account</kart-button>
+    } @else {
+      <kart-alert variant="warning">
+        Deleting your account is <strong>irreversible</strong>. Order and payment records are
+        retained as required by tax/legal obligations and are never fully erased, even though
+        your personal profile is.
+      </kart-alert>
+      <label class="kart-privacy-page__ack">
+        <input type="checkbox" [checked]="deleteAcknowledged()" (change)="deleteAcknowledged.set($any($event.target).checked)" />
+        I understand this cannot be undone.
+      </label>
+      <div class="kart-privacy-page__delete-actions">
+        <kart-button variant="danger" [disabled]="!deleteAcknowledged()" [loading]="deleting()" (click)="confirmDelete()">
+          Permanently delete my account
+        </kart-button>
+        <kart-button variant="secondary" (click)="cancelDelete()">Cancel</kart-button>
+      </div>
+    }
+  </kart-card>
+
+  <kart-card class="kart-privacy-page__section">
+    <h2>Correct my information</h2>
+    <p>
+      Most fields (name, email, addresses, preferences) are self-editable from
+      <a routerLink="/account/profile">your profile</a>. For a field you can't edit yourself,
+      contact Support to request a correction.
+    </p>
+  </kart-card>
+</section>

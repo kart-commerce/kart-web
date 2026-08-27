@@ -112,6 +112,54 @@
   font-weight: var(--kart-font-weight-bold);
 }
 
+.kart-order-detail__reconnecting {
+  color: var(--kart-color-warning);
+  font-size: var(--kart-font-size-caption);
+  margin: var(--kart-spacing-sm) 0 0;
+}
+
+.kart-order-detail__currency-note {
+  color: var(--kart-color-text-muted);
+  font-size: var(--kart-font-size-caption);
+  margin: var(--kart-spacing-sm) 0 0;
+}
+
+.kart-order-detail__shipping-method {
+  color: var(--kart-color-text-muted);
+  font-size: var(--kart-font-size-caption);
+}
+
+.kart-order-detail__actions,
+.kart-order-detail__return-status,
+.kart-order-detail__return-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-sm);
+  align-items: flex-start;
+}
+
+.kart-order-detail__error {
+  color: var(--kart-color-danger);
+  font-size: var(--kart-font-size-caption);
+}
+
+.kart-order-detail__return-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-xs);
+  width: 100%;
+  font-size: var(--kart-font-size-caption);
+}
+
+.kart-order-detail__return-lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-xs);
+  border: 1px solid var(--kart-color-border);
+  border-radius: var(--kart-radius-md);
+  padding: var(--kart-spacing-sm);
+}
+
 .kart-order-detail__back {
   color: var(--kart-color-primary);
 }

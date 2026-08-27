@@ -49,4 +49,23 @@ describe('authInterceptor', () => {
 
     expect((error as { status: number }).status).toBe(401);
   });
+
+  it('coalesces two requests that 401 around the same time into a single refresh call', () => {
+    let resultA: unknown;
+    let resultB: unknown;
+    http.get('/api/bff/cart').subscribe((res) => (resultA = res));
+    http.get('/api/bff/wishlist').subscribe((res) => (resultB = res));
+
+    httpMock.expectOne('/api/bff/cart').flush(null, { status: 401, statusText: 'Unauthorized' });
+    httpMock.expectOne('/api/bff/wishlist').flush(null, { status: 401, statusText: 'Unauthorized' });
+
+    // Only one refresh call should go out even though both requests 401'd.
+    httpMock.expectOne('/api/bff/auth/refresh').flush({ authenticated: true, roles: ['customer'] });
+
+    httpMock.expectOne('/api/bff/cart').flush({ ok: 'cart' });
+    httpMock.expectOne('/api/bff/wishlist').flush({ ok: 'wishlist' });
+
+    expect(resultA).toEqual({ ok: 'cart' });
+    expect(resultB).toEqual({ ok: 'wishlist' });
+  });
 });

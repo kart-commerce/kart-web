@@ -18,4 +18,12 @@ export const catalogRoutes: Routes = [
     path: 'search',
     loadComponent: () => import('./search-page/search-page').then((m) => m.SearchPage),
   },
+  {
+    path: 'b/:brand',
+    loadComponent: () => import('./brand-page/brand-page').then((m) => m.BrandPage),
+  },
+  {
+    path: 'compare',
+    loadComponent: () => import('./compare-page/compare-page').then((m) => m.ComparePage),
+  },
 ];

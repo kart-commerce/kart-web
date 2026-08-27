@@ -1,0 +1,7 @@
+{
+  "common.locale_switcher.label": "Sprache",
+  "common.currency_switcher.label": "Währung",
+  "common.cart.item_count": "{count, plural, one {# Artikel} other {# Artikel}}",
+  "common.actions.add_to_cart": "In den Warenkorb",
+  "common.actions.view_cart": "Warenkorb ansehen"
+}

@@ -1,14 +1,21 @@
 .kart-category-nav-item {
   list-style: none;
+  min-width: 0;
 }
 
 .kart-category-nav-item__row {
   display: flex;
   align-items: center;
   gap: var(--kart-spacing-xs);
+  min-width: 0;
 }
 
 .kart-category-nav-item__link {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--kart-color-text);
   text-decoration: none;
   padding: var(--kart-spacing-xs) 0;
@@ -19,6 +26,7 @@
 }
 
 .kart-category-nav-item__toggle {
+  flex: 0 0 auto;
   background: none;
   border: 1px solid var(--kart-color-border);
   border-radius: var(--kart-radius-sm);
@@ -30,9 +38,16 @@
 }
 
 .kart-category-nav-item__children {
-  margin: var(--kart-spacing-xs) 0 0 var(--kart-spacing-md);
-  padding: 0;
+  margin: var(--kart-spacing-xs) 0 0 var(--kart-spacing-sm);
+  padding: 0 0 0 var(--kart-spacing-sm);
+  border-left: 1px solid var(--kart-color-border);
   display: flex;
   flex-direction: column;
   gap: var(--kart-spacing-xs);
+}
+
+.kart-category-nav-item__error {
+  color: var(--kart-color-text-muted);
+  font-size: var(--kart-font-size-caption);
+  margin: var(--kart-spacing-xs) 0 0 var(--kart-spacing-md);
 }

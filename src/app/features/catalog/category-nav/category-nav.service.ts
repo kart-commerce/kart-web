@@ -1,44 +1,60 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 
+import { Category } from '../../../core/http/generated/category/v1/model/category';
 import { DefaultService } from '../../../core/http/generated/category/v1/api/default.service';
 import { CategoryTreeNode } from './category-tree-node';
 
+/** kart-search-service's combined category/price/rating facet-filter cap (see `product.service.ts`). */
+const MAX_CATEGORY_FILTER_VALUES = 5;
+
 /**
- * Builds the full active category tree from kart-category-service's
- * parent-scoped `GET /categories` (omitting `parentId` returns only depth-1
- * categories — the contract is designed for exactly this level-by-level
- * navigation-tree usage, not a single fetch-everything call). Each level's
- * children are fetched in parallel (architecture.md: SSR fan-out must be
- * parallel, not serial), and recursion stops at depth 4 — the contract's own
- * max-depth invariant — without an extra probe call per leaf.
+ * Loads one level of kart-category-service's parent-scoped `GET /categories`
+ * at a time (omitting `parentId` returns depth-1 categories). Callers fetch
+ * children lazily, on demand, instead of prefetching the whole tree — the
+ * previous eager recursive implementation issued one request per node and
+ * could balloon into thousands of calls for a wide, deep catalog.
  */
 @Injectable({ providedIn: 'root' })
 export class CategoryNavService {
   private readonly categoryApi = inject(DefaultService);
 
-  loadTree(): Observable<CategoryTreeNode[]> {
+  loadRoot(): Observable<CategoryTreeNode[]> {
     return this.loadLevel(undefined);
   }
 
-  private loadLevel(parentId: string | undefined): Observable<CategoryTreeNode[]> {
-    return this.categoryApi.listCategories(parentId).pipe(
-      switchMap((categories) => {
-        const active = categories.filter((category) => category.status === 'active');
-        if (active.length === 0) {
-          return of([]);
+  loadChildren(parentId: string): Observable<CategoryTreeNode[]> {
+    return this.loadLevel(parentId);
+  }
+
+  /** Single-category lookup by id (e.g. the category page's own title) - real `GET /v1/categories/{id}`. */
+  getCategory(categoryId: string): Observable<Category | undefined> {
+    return this.categoryApi.getCategory(categoryId).pipe(catchError(() => of(undefined)));
+  }
+
+  /**
+   * Products are indexed under their own leaf categoryId only (kart-search-service does no
+   * ancestor-path matching), so browsing a non-leaf category (the common case — top-level nav
+   * items are parents) requires resolving its leaf descendants and filtering search by those
+   * instead. Scoped to one clicked category's own subtree, not a whole-tree prefetch.
+   */
+  resolveLeafCategoryIds(categoryId: string): Observable<readonly string[]> {
+    return this.loadChildren(categoryId).pipe(
+      switchMap((children) => {
+        if (children.length === 0) {
+          return of([categoryId]);
         }
-
-        const withChildren: Observable<CategoryTreeNode>[] = active.map((category) =>
-          category.depth >= 4
-            ? of({ ...category, children: [] })
-            : this.loadLevel(category.categoryId).pipe(
-                map((children) => ({ ...category, children })),
-              ),
+        return forkJoin(children.map((child) => this.resolveLeafCategoryIds(child.categoryId))).pipe(
+          map((leafGroups) => leafGroups.flat().slice(0, MAX_CATEGORY_FILTER_VALUES)),
         );
-
-        return forkJoin(withChildren);
       }),
+      catchError(() => of([categoryId])),
     );
+  }
+
+  private loadLevel(parentId: string | undefined): Observable<CategoryTreeNode[]> {
+    return this.categoryApi
+      .listCategories(parentId)
+      .pipe(map((categories) => categories.filter((category) => category.status === 'active')));
   }
 }

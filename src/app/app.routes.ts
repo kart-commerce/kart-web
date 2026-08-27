@@ -23,7 +23,16 @@ export const routes: Routes = [
       import('./features/order-tracking/order-tracking.routes').then((m) => m.orderTrackingRoutes),
   },
   {
+    path: 'cookie-preferences',
+    loadComponent: () =>
+      import('./core/consent/cookie-preferences-page/cookie-preferences-page').then((m) => m.CookiePreferencesPage),
+  },
+  {
     path: '',
     loadChildren: () => import('./features/catalog/catalog.routes').then((m) => m.catalogRoutes),
+  },
+  {
+    path: '',
+    loadChildren: () => import('./features/cms/cms.routes').then((m) => m.cmsRoutes),
   },
 ];

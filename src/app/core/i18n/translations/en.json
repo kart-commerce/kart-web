@@ -1,0 +1,7 @@
+{
+  "common.locale_switcher.label": "Language",
+  "common.currency_switcher.label": "Currency",
+  "common.cart.item_count": "{count, plural, one {# item} other {# items}}",
+  "common.actions.add_to_cart": "Add to cart",
+  "common.actions.view_cart": "View cart"
+}

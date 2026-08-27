@@ -1,0 +1,75 @@
+<div class="kart-product-reviews">
+  @if (rating(); as r) {
+    <div class="kart-product-reviews__summary">
+      <kart-rating-stars [average]="r.average" [count]="r.count" />
+    </div>
+  }
+
+  @if (!showForm()) {
+    <kart-button variant="secondary" (click)="showForm.set(true)">Write a review</kart-button>
+  } @else {
+    <form class="kart-product-reviews__form" [formGroup]="form" (ngSubmit)="submit()">
+      <kart-form-field
+        label="Your name"
+        inputId="review-author"
+        [error]="form.controls.author.touched && form.controls.author.invalid ? 'Name is required.' : null"
+      >
+        <input kartInput id="review-author" type="text" formControlName="author" />
+      </kart-form-field>
+      <kart-form-field label="Rating" inputId="review-rating">
+        <select kartInput id="review-rating" formControlName="rating">
+          <option [value]="5">5 - Excellent</option>
+          <option [value]="4">4 - Good</option>
+          <option [value]="3">3 - Average</option>
+          <option [value]="2">2 - Poor</option>
+          <option [value]="1">1 - Terrible</option>
+        </select>
+      </kart-form-field>
+      <kart-form-field
+        label="Title"
+        inputId="review-title"
+        [error]="form.controls.title.touched && form.controls.title.invalid ? 'Title is required.' : null"
+      >
+        <input kartInput id="review-title" type="text" formControlName="title" />
+      </kart-form-field>
+      <kart-form-field
+        label="Review"
+        inputId="review-body"
+        [error]="form.controls.body.touched && form.controls.body.invalid ? 'Review text is required.' : null"
+      >
+        <textarea kartInput id="review-body" formControlName="body"></textarea>
+      </kart-form-field>
+      <kart-button type="submit" [loading]="submitting()">Submit review</kart-button>
+    </form>
+  }
+
+  @if (pendingSubmission(); as pending) {
+    <article class="kart-product-reviews__item kart-product-reviews__item--pending">
+      <div class="kart-product-reviews__item-header">
+        <kart-rating-stars [average]="pending.rating" />
+        <strong>{{ pending.title }}</strong>
+        <kart-badge variant="warning">Pending moderation</kart-badge>
+      </div>
+      <p>{{ pending.body }}</p>
+      <p class="kart-product-reviews__meta">{{ pending.author }} · {{ pending.createdAt | date: 'mediumDate' }}</p>
+    </article>
+  }
+
+  @if (reviews().length === 0 && !pendingSubmission()) {
+    <p class="kart-product-reviews__empty">No reviews yet — be the first to share your thoughts.</p>
+  } @else {
+    @for (review of reviews(); track review.reviewId) {
+      <article class="kart-product-reviews__item">
+        <div class="kart-product-reviews__item-header">
+          <kart-rating-stars [average]="review.rating" />
+          <strong>{{ review.title }}</strong>
+          @if (review.verifiedPurchase) {
+            <kart-badge variant="success">Verified purchase</kart-badge>
+          }
+        </div>
+        <p>{{ review.body }}</p>
+        <p class="kart-product-reviews__meta">{{ review.author }} · {{ review.createdAt | date: 'mediumDate' }}</p>
+      </article>
+    }
+  }
+</div>

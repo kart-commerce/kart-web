@@ -1,0 +1,63 @@
+<section class="kart-compare-page">
+  <h1>Compare products</h1>
+
+  @if (visibleProducts().length === 0) {
+    <kart-card>
+      <p>Add products to compare from any product listing — look for the "Compare" checkbox.</p>
+    </kart-card>
+  } @else {
+    <div class="kart-compare-page__table" role="table">
+      <div class="kart-compare-page__row kart-compare-page__row--header" role="row">
+        <div class="kart-compare-page__cell kart-compare-page__cell--label"></div>
+        @for (product of visibleProducts(); track product.sku) {
+          <div class="kart-compare-page__cell" role="cell">
+            <img [src]="product.thumbnailUrl" [alt]="product.name" width="96" height="96" />
+            <p>{{ product.name }}</p>
+            <button type="button" (click)="remove(product.sku)">Remove</button>
+          </div>
+        }
+      </div>
+
+      <div class="kart-compare-page__row" role="row">
+        <div class="kart-compare-page__cell kart-compare-page__cell--label">Price</div>
+        @for (product of visibleProducts(); track product.sku) {
+          <div class="kart-compare-page__cell" role="cell">{{ product.price | kartMoney }}</div>
+        }
+      </div>
+
+      <div class="kart-compare-page__row" role="row">
+        <div class="kart-compare-page__cell kart-compare-page__cell--label">Rating</div>
+        @for (product of visibleProducts(); track product.sku) {
+          <div class="kart-compare-page__cell" role="cell">
+            <kart-rating-stars [average]="product.ratingAverage" [count]="product.ratingCount" />
+          </div>
+        }
+      </div>
+
+      <div class="kart-compare-page__row" role="row">
+        <div class="kart-compare-page__cell kart-compare-page__cell--label">Availability</div>
+        @for (product of visibleProducts(); track product.sku) {
+          <div class="kart-compare-page__cell" role="cell">{{ product.inStock ? 'In stock' : 'Out of stock' }}</div>
+        }
+      </div>
+
+      @for (key of attributeKeys(); track key) {
+        <div class="kart-compare-page__row" role="row">
+          <div class="kart-compare-page__cell kart-compare-page__cell--label">{{ key }}</div>
+          @for (product of visibleProducts(); track product.sku) {
+            <div class="kart-compare-page__cell" role="cell">{{ product.attributes[key] ?? '—' }}</div>
+          }
+        </div>
+      }
+
+      <div class="kart-compare-page__row" role="row">
+        <div class="kart-compare-page__cell kart-compare-page__cell--label"></div>
+        @for (product of visibleProducts(); track product.sku) {
+          <div class="kart-compare-page__cell" role="cell">
+            <kart-button [disabled]="!product.inStock" (click)="addToCart(product)">Add to cart</kart-button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</section>

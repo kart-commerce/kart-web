@@ -27,5 +27,9 @@ export function placeholderImage(seed: string, label: string): string {
     <text x="240" y="264" font-family="Inter, system-ui, sans-serif" font-size="120" font-weight="700"
       fill="#FFFFFF" text-anchor="middle">${initials(label)}</text>
   </svg>`;
-  return `data:image/svg+xml;base64,${btoa(svg)}`;
+  // encodeURIComponent, not btoa - a product/brand name outside the Latin-1 range (e.g. CJK
+  // characters, emoji) makes btoa throw InvalidCharacterError, which would crash this call's
+  // entire enclosing map() and cascade into an outer catchError (surfacing as, e.g., a cart line
+  // that looks "out of stock" when the real cause was an unencodable name).
+  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }

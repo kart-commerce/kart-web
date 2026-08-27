@@ -7,8 +7,11 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
+    "test:bff": "vitest run --root src/server",
     "serve:ssr:kart-web": "node dist/kart-web/server/server.mjs",
-    "lint": "ng lint"
+    "lint": "ng lint",
+    "start:mock": "KART_MOCK=1 ng serve --configuration mock",
+    "check:i18n": "node scripts/check-translation-completeness.mjs"
   },
   "private": true,
   "packageManager": "npm@10.9.2",
@@ -20,11 +23,13 @@
     "@angular/platform-browser": "^22.0.0",
     "@angular/platform-server": "^22.0.0",
     "@angular/router": "^22.0.0",
+    "@angular/service-worker": "^22.0.8",
     "@angular/ssr": "^22.0.8",
     "cookie": "^2.0.1",
     "design-system": "file:vendor/design-system-0.0.1.tgz",
     "express": "^5.1.0",
     "ioredis": "^5.11.1",
+    "pino": "^10.3.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
@@ -45,8 +50,16 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.2.0",
+    "msw": "^2.15.0",
     "prettier": "^3.8.1",
     "typescript": "~6.0.2",
-    "typescript-eslint": "8.62.1"
+    "typescript-eslint": "8.62.1",
+    "vitest": "^4.1.10",
+    "@vitest/coverage-v8": "^4.1.10"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

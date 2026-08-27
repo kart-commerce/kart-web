@@ -124,3 +124,51 @@
   font-size: var(--kart-font-size-caption);
 }
 
+.kart-checkout-page__processing {
+  color: var(--kart-color-text-muted);
+  font-size: var(--kart-font-size-caption);
+  text-align: center;
+}
+
+.kart-checkout-page__stepper {
+  display: flex;
+  gap: var(--kart-spacing-md);
+  list-style: none;
+  margin: 0 0 var(--kart-spacing-lg);
+  padding: 0;
+  text-transform: capitalize;
+}
+
+.kart-checkout-page__stepper button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--kart-color-text-muted);
+  font-size: var(--kart-font-size-caption);
+  padding: var(--kart-spacing-xs) 0;
+}
+
+.kart-checkout-page__step--active button {
+  color: var(--kart-color-primary);
+  font-weight: var(--kart-font-weight-bold);
+  border-bottom: 2px solid var(--kart-color-primary);
+}
+
+.kart-checkout-page__step--done button {
+  color: var(--kart-color-success);
+}
+
+.kart-checkout-page__shipping-list {
+  list-style: none;
+  margin: 0 0 var(--kart-spacing-md);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-sm);
+}
+
+.kart-checkout-page__payment-confirmed {
+  color: var(--kart-color-success);
+  font-size: var(--kart-font-size-caption);
+}
+

@@ -1,0 +1,26 @@
+<section class="kart-auth-page">
+  <h1>Log in with a one-time code</h1>
+
+  @if (errorMessage(); as message) {
+    <kart-alert variant="danger">{{ message }}</kart-alert>
+  }
+
+  @if (codeRequested()) {
+    <p>If that email is registered, we've sent a one-time code to it. Enter it on the next screen.</p>
+    <kart-button type="button" (click)="goToVerify()">Enter code</kart-button>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="requestCode()">
+      <kart-form-field
+        label="Email"
+        inputId="otp-email"
+        [error]="form.controls.email.touched && form.controls.email.invalid ? 'Enter a valid email address.' : null"
+      >
+        <input kartInput id="otp-email" type="email" formControlName="email" autocomplete="email" required />
+      </kart-form-field>
+
+      <kart-button type="submit" [loading]="submitting()">Send code</kart-button>
+    </form>
+  }
+
+  <p><a routerLink="/account/login">Back to log in with a password</a></p>
+</section>

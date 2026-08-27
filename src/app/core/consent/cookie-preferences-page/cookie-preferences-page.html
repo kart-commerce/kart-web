@@ -1,0 +1,16 @@
+<section class="kart-cookie-prefs">
+  <h1>Cookie Preferences</h1>
+  <p>
+    Choose which optional cookies Kart may use on this device. Necessary cookies are always on
+    since they're required for cart, checkout, and account sessions to work.
+  </p>
+
+  <kart-consent-categories
+    [initial]="consentService.consent()?.categories ?? { analytics: false, marketing: false, preference: false }"
+    (saved)="save($event)"
+  />
+
+  @if (justSaved()) {
+    <p class="kart-cookie-prefs__confirmation" role="status">Preferences saved.</p>
+  }
+</section>

@@ -9,7 +9,31 @@
  * via IDENTITY_SERVICE_BASE_URL when routing through kart-api-gateway or a
  * deployed environment instead.
  */
-const IDENTITY_SERVICE_BASE_URL = process.env['IDENTITY_SERVICE_BASE_URL'] ?? 'http://localhost:5200';
+import { logger } from '../logger';
+import { SERVICE_ENDPOINTS } from '../../app/core/config/service-endpoints';
+
+const IDENTITY_SERVICE_BASE_URL = process.env['IDENTITY_SERVICE_BASE_URL'] ?? SERVICE_ENDPOINTS.identity;
+
+/**
+ * Distinct from IDENTITY_SERVICE_BASE_URL on purpose: that one is a server-to-server URL (in the
+ * live Docker stack it resolves to the Docker-internal `http://identity:8080` DNS name, only
+ * reachable from inside the compose network) used for calls this Node process makes itself.
+ * Redirect URLs handed back in an HTTP `Location` header are followed by the end user's own
+ * browser, outside that network — using the internal hostname there produces an unreachable
+ * redirect (confirmed: clicking "Sign in with Google" against the live stack failed with a
+ * DNS/connection error before this was split out). Defaults to the same browser-reachable
+ * host-mapped port SERVICE_ENDPOINTS.identity already documents.
+ */
+const IDENTITY_SERVICE_PUBLIC_BASE_URL = process.env['IDENTITY_SERVICE_PUBLIC_BASE_URL'] ?? SERVICE_ENDPOINTS.identity;
+
+/**
+ * Every call this client makes gets a hard timeout — at 100k-200k req/min across many pods, an
+ * identity-service that merely stalls (rather than cleanly erroring) instead of a fast failure
+ * would otherwise hold this process's request (and the underlying socket) open indefinitely,
+ * turning one slow upstream into cascading resource exhaustion here. `AbortSignal.timeout` turns
+ * that into a normal thrown error `identityFetch` already handles like any other network failure.
+ */
+const IDENTITY_SERVICE_TIMEOUT_MS = Number(process.env['IDENTITY_SERVICE_TIMEOUT_MS'] ?? 10_000);
 
 export interface TokenPair {
   readonly accessToken: string;
@@ -37,10 +61,18 @@ export interface IdentityResponse<T> {
 }
 
 async function identityFetch<T>(path: string, init: RequestInit = {}): Promise<IdentityResponse<T>> {
-  const response = await fetch(`${IDENTITY_SERVICE_BASE_URL}/v1${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...(init.headers ?? {}) },
-  });
+  const url = `${IDENTITY_SERVICE_BASE_URL}/v1${path}`;
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...init,
+      headers: { 'Content-Type': 'application/json', ...(init.headers ?? {}) },
+      signal: AbortSignal.timeout(IDENTITY_SERVICE_TIMEOUT_MS),
+    });
+  } catch (error) {
+    logger.error({ err: error, url, method: init.method ?? 'GET' }, 'identityClient: request threw — is kart-identity-service unreachable or stalled?');
+    throw error;
+  }
   const body = (await response.json().catch(() => ({}))) as T;
   return { status: response.status, body };
 }
@@ -62,6 +94,20 @@ export const identityClient = {
 
   verifyMfa(request: { challengeId: string; totpCode: string }) {
     return identityFetch<TokenPair | Problem>('/auth/mfa/verify', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
+  requestOtp(request: { email: string }) {
+    return identityFetch<undefined | Problem>('/auth/otp/request', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  },
+
+  verifyOtp(request: { email: string; code: string }) {
+    return identityFetch<TokenPair | MfaChallenge | Problem>('/auth/otp/verify', {
       method: 'POST',
       body: JSON.stringify(request),
     });
@@ -119,6 +165,6 @@ export const identityClient = {
 
   /** Browser-reachable base URL for redirecting to the IdP-initiated login step. */
   socialLoginRedirectUrl(provider: string): string {
-    return `${IDENTITY_SERVICE_BASE_URL}/v1/auth/sso/social/${encodeURIComponent(provider)}/login`;
+    return `${IDENTITY_SERVICE_PUBLIC_BASE_URL}/v1/auth/sso/social/${encodeURIComponent(provider)}/login`;
   },
 };

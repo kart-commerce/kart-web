@@ -1,0 +1,50 @@
+<div class="kart-consent-categories">
+  <div class="kart-consent-categories__row">
+    <div>
+      <strong>Necessary</strong>
+      <p>Session, cart, locale/currency — always on, required for the site to function.</p>
+    </div>
+    <input type="checkbox" checked disabled aria-label="Necessary (always on)" />
+  </div>
+
+  <div class="kart-consent-categories__row">
+    <div>
+      <strong>Analytics</strong>
+      <p>Helps us understand how the site is used.</p>
+    </div>
+    <input
+      type="checkbox"
+      [checked]="analytics()"
+      (change)="analytics.set($any($event.target).checked)"
+      aria-label="Analytics"
+    />
+  </div>
+
+  <div class="kart-consent-categories__row">
+    <div>
+      <strong>Marketing</strong>
+      <p>Ad-retargeting and marketing-attribution.</p>
+    </div>
+    <input
+      type="checkbox"
+      [checked]="marketing()"
+      (change)="marketing.set($any($event.target).checked)"
+      aria-label="Marketing"
+    />
+  </div>
+
+  <div class="kart-consent-categories__row">
+    <div>
+      <strong>Preference</strong>
+      <p>Remembers non-essential choices like a dismissed promo banner.</p>
+    </div>
+    <input
+      type="checkbox"
+      [checked]="preference()"
+      (change)="preference.set($any($event.target).checked)"
+      aria-label="Preference"
+    />
+  </div>
+
+  <kart-button (click)="save()">Save preferences</kart-button>
+</div>

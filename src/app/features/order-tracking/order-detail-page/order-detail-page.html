@@ -8,24 +8,37 @@
     } @else {
       <div class="kart-order-detail__heading">
         <h1>Order {{ formatOrderNumber(order.orderId) }}</h1>
-        <kart-badge variant="primary">{{ statusLabels[order.status] }}</kart-badge>
+        <kart-badge [variant]="order.status === 'cancelled' || order.status === 'refunded' ? 'neutral' : 'primary'">
+          {{ statusLabels[order.status] }}
+        </kart-badge>
       </div>
     }
 
-    <kart-card class="kart-order-detail__timeline">
-      <h2>Tracking</h2>
-      <p class="kart-order-detail__tracking-id">
-        Placed {{ order.placedAt | date: 'medium' }} · Tracking ID: {{ order.trackingId }}
-      </p>
-      <ol class="kart-order-detail__steps">
-        @for (status of statusSequence; track status) {
-          <li class="kart-order-detail__step" [class.kart-order-detail__step--reached]="isReached(status, order.status)">
-            <span class="kart-order-detail__step-dot" aria-hidden="true"></span>
-            <span>{{ statusLabels[status] }}</span>
-          </li>
+    @if (order.status !== 'cancelled' && order.status !== 'refunded') {
+      <kart-card class="kart-order-detail__timeline">
+        <h2>Tracking</h2>
+        <p class="kart-order-detail__tracking-id">
+          Placed {{ order.placedAt | date: 'medium' }} · Tracking ID: {{ order.trackingId }}
+          @if (order.carrier) {
+            · Carrier: {{ order.carrier.carrier }}
+            @if (order.carrier.estimatedDeliveryAt) {
+              · Est. delivery {{ order.carrier.estimatedDeliveryAt | date: 'mediumDate' }}
+            }
+          }
+        </p>
+        <ol class="kart-order-detail__steps">
+          @for (status of statusSequence; track status) {
+            <li class="kart-order-detail__step" [class.kart-order-detail__step--reached]="isReached(status, order.status)">
+              <span class="kart-order-detail__step-dot" aria-hidden="true"></span>
+              <span>{{ statusLabels[status] }}</span>
+            </li>
+          }
+        </ol>
+        @if (connectionStatus() === 'reconnecting' || connectionStatus() === 'disconnected') {
+          <p class="kart-order-detail__reconnecting" role="status">Live updates reconnecting — still checking periodically.</p>
         }
-      </ol>
-    </kart-card>
+      </kart-card>
+    }
 
     <kart-card class="kart-order-detail__items">
       <h2>Items</h2>
@@ -55,6 +68,11 @@
           <dd>{{ order.total | kartMoney }}</dd>
         </div>
       </dl>
+      @if (showsOriginalCurrencyNote()) {
+        <p class="kart-order-detail__currency-note">
+          Shown in this order's original currency ({{ order.total.currency }}), not your current display currency.
+        </p>
+      }
     </kart-card>
 
     <kart-card class="kart-order-detail__address">
@@ -64,6 +82,84 @@
         {{ order.shippingAddress.line1 }}<br />
         {{ order.shippingAddress.city }}, {{ order.shippingAddress.state }} {{ order.shippingAddress.postalCode }}
       </p>
+      @if (order.shippingMethod) {
+        <p class="kart-order-detail__shipping-method">{{ order.shippingMethod.label }} ({{ order.shippingMethod.etaDays }})</p>
+      }
+    </kart-card>
+
+    @if (availableActions().has('cancel')) {
+      <kart-card class="kart-order-detail__actions">
+        <h2>Need to make a change?</h2>
+        @if (cancelError()) {
+          <p class="kart-order-detail__error" role="alert">{{ cancelError() }}</p>
+        }
+        <kart-button variant="danger" [loading]="cancelling()" (click)="cancelOrder()">Cancel order</kart-button>
+      </kart-card>
+    }
+
+    @if (order.status === 'shipped' || order.status === 'out-for-delivery') {
+      <kart-card class="kart-order-detail__actions">
+        <p>This order is already on its way — contact Support if you need to make a change.</p>
+      </kart-card>
+    }
+
+    @if (order.returnRequest; as returnRequest) {
+      <kart-card class="kart-order-detail__return-status">
+        <h2>Return request</h2>
+        <p>Status: {{ returnRequest.status }}</p>
+        <p>Requested amount: {{ returnRequest.requestedAmount | kartMoney }}</p>
+        @if (returnRequest.status === 'rejected' && returnRequest.rejectionReason) {
+          <p class="kart-order-detail__error" role="alert">{{ returnRequest.rejectionReason }}</p>
+        }
+      </kart-card>
+    } @else if (availableActions().has('request-return')) {
+      @if (!featureFlags.isEnabled('ff-return-request-order-service')) {
+        <kart-coming-soon title="Returns" message="Self-service returns are launching soon." />
+      } @else {
+        <kart-card class="kart-order-detail__return-form">
+          <h2>Request a return</h2>
+          @if (!returnFormOpen()) {
+            <kart-button variant="secondary" (click)="returnFormOpen.set(true)">Request a return</kart-button>
+          } @else {
+            @if (returnError()) {
+              <p class="kart-order-detail__error" role="alert">{{ returnError() }}</p>
+            }
+            <label class="kart-order-detail__return-field">
+              Reason
+              <select [value]="returnReason()" (change)="returnReason.set($any($event.target).value)">
+                @for (entry of returnReasonLabels | keyvalue; track entry.key) {
+                  <option [value]="entry.key">{{ entry.value }}</option>
+                }
+              </select>
+            </label>
+            <fieldset class="kart-order-detail__return-lines">
+              <legend>Items to return</legend>
+              @for (item of order.items; track item.sku) {
+                <label>
+                  <input type="checkbox" (change)="toggleReturnLine(item.sku)" />
+                  {{ item.name }} &times; {{ item.quantity }}
+                </label>
+              }
+            </fieldset>
+            <label class="kart-order-detail__return-field">
+              Note (optional)
+              <textarea (input)="returnNote.set($any($event.target).value)"></textarea>
+            </label>
+            <kart-button [loading]="returningItems()" (click)="submitReturnRequest()">Submit return request</kart-button>
+          }
+        </kart-card>
+      }
+    }
+
+    <kart-card class="kart-order-detail__recommendations">
+      <h2>You might also like</h2>
+      @defer (on viewport) {
+        <kart-product-recommendations [excludeSkus]="order.items.map((item) => item.sku)" [limit]="4" />
+      } @placeholder {
+        <p>Recommendations load as you scroll…</p>
+      } @loading (minimum 200ms) {
+        <kart-spinner label="Loading recommendations" />
+      }
     </kart-card>
 
     <a class="kart-order-detail__back" routerLink="/orders">View order history</a>

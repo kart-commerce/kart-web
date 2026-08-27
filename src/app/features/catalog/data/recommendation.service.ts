@@ -1,15 +1,39 @@
-import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { Observable, catchError, forkJoin, map, of, switchMap } from 'rxjs';
 
+import { DefaultService as RecommendationApi } from '../../../core/http/generated/recommendation/v1';
+import { ProductService } from './product.service';
 import { ProductSummary } from './models';
-import { MOCK_PRODUCTS } from './mock-catalog';
 
-/** Stands in for kart-recommendation-service's `GET /v1/recommendations/{userId}` — see mock-catalog.ts. */
+/**
+ * Real `GET /v1/recommendations/{userId}` (kart-recommendation-service). Fails open on any
+ * error, and on a guest session with no `userId` to call the per-user endpoint with (there is
+ * no anonymous-recommendations endpoint on this contract) — container-diagram.md's documented
+ * degraded-mode behavior for this service, api-integration-map.md's Recommendations row: a
+ * timeout/down dependency, or simply nothing to show, renders nothing, never an error block.
+ */
 @Injectable({ providedIn: 'root' })
 export class RecommendationService {
-  /** `userId` is unused by the mock but kept in the signature — the real endpoint is per-user. */
-  listForUser(userId: string | null): Observable<readonly ProductSummary[]> {
-    void userId;
-    return of(MOCK_PRODUCTS.filter((product) => product.ratingAverage >= 4.5).slice(0, 8));
+  private readonly recommendationApi = inject(RecommendationApi);
+  private readonly productService = inject(ProductService);
+
+  listForUser(userId: string | null, limit = 8): Observable<readonly ProductSummary[]> {
+    if (!userId) {
+      return of([]);
+    }
+    return this.recommendationApi.getRecommendationsForUser(userId, limit).pipe(
+      switchMap((response) => this.hydrate(response.items.map((item) => item.sku))),
+      catchError(() => of([])),
+    );
+  }
+
+  /** `RecommendedItem` only carries sku/score/source (recommendedItem.ts) — join against kart-product-service for the full card payload `ProductCard` needs. */
+  private hydrate(skus: readonly string[]): Observable<readonly ProductSummary[]> {
+    if (skus.length === 0) {
+      return of([]);
+    }
+    return forkJoin(skus.map((sku) => this.productService.getBySku(sku))).pipe(
+      map((products) => products.filter((product): product is NonNullable<typeof product> => product != null)),
+    );
   }
 }

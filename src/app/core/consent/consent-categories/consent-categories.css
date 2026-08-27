@@ -1,0 +1,18 @@
+.kart-consent-categories {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-md);
+}
+
+.kart-consent-categories__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--kart-spacing-md);
+}
+
+.kart-consent-categories__row p {
+  margin: var(--kart-spacing-xs) 0 0;
+  color: var(--kart-color-text-muted);
+  font-size: var(--kart-font-size-caption);
+}

@@ -1,0 +1,57 @@
+<div class="kart-notification-bell">
+  <button
+    type="button"
+    class="kart-notification-bell__trigger"
+    (click)="toggle()"
+    [attr.aria-expanded]="open()"
+    aria-haspopup="true"
+    [attr.aria-label]="'Notifications' + (notificationCenter.unreadCount() > 0 ? ', ' + notificationCenter.unreadCount() + ' unread' : '')"
+  >
+    <span aria-hidden="true">🔔</span>
+    @if (notificationCenter.unreadCount() > 0) {
+      <span class="kart-notification-bell__count">{{ notificationCenter.unreadCount() }}</span>
+    }
+  </button>
+
+  @if (open()) {
+    <div class="kart-notification-bell__panel" role="menu">
+      <div class="kart-notification-bell__header">
+        <h2>Notifications</h2>
+        @if (notificationCenter.unreadCount() > 0) {
+          <button type="button" class="kart-notification-bell__mark-all" (click)="notificationCenter.markAllRead()">
+            Mark all read
+          </button>
+        }
+      </div>
+
+      @if (notificationCenter.notifications().length === 0) {
+        <p class="kart-notification-bell__empty">You're all caught up.</p>
+      } @else {
+        <ul class="kart-notification-bell__list">
+          @for (item of notificationCenter.notifications(); track item.id) {
+            <li>
+              <a
+                class="kart-notification-bell__item"
+                [class.kart-notification-bell__item--unread]="!item.read"
+                [routerLink]="item.link ?? null"
+                (click)="select(item.id)"
+              >
+                <span class="kart-notification-bell__item-title">{{ item.title }}</span>
+                <span class="kart-notification-bell__item-message">{{ item.message }}</span>
+                <span class="kart-notification-bell__item-date">{{ item.createdAt | date: 'medium' }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+
+      @if (pushRegistration.permission() === 'default') {
+        <div class="kart-notification-bell__push-optin">
+          <button type="button" class="kart-notification-bell__push-button" (click)="enablePushNotifications()">
+            Enable push notifications
+          </button>
+        </div>
+      }
+    </div>
+  }
+</div>

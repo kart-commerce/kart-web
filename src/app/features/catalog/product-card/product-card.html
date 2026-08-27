@@ -42,6 +42,16 @@
       >
         {{ product().inStock ? 'Add to cart' : 'Out of stock' }}
       </button>
+
+      <label class="kart-product-card__compare">
+        <input
+          type="checkbox"
+          [checked]="compareService.isComparing(product().sku)"
+          [disabled]="!compareService.isComparing(product().sku) && compareService.isFull()"
+          (click)="toggleCompare($event)"
+        />
+        Compare
+      </label>
     </div>
   </kart-card>
 </a>

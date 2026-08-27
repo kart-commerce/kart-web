@@ -1,0 +1,65 @@
+.kart-notifications-page {
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-lg);
+}
+
+.kart-notifications-page__subnav {
+  display: flex;
+  gap: var(--kart-spacing-md);
+  font-size: var(--kart-font-size-caption);
+}
+
+.kart-notifications-page__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-sm);
+}
+
+.kart-notifications-page__section h2 {
+  margin: 0;
+  font-size: var(--kart-font-size-heading-4);
+}
+
+.kart-notifications-page__hint {
+  color: var(--kart-color-text-muted);
+  font-size: var(--kart-font-size-caption);
+  margin: 0;
+}
+
+.kart-notifications-page__section form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-md);
+  max-width: 420px;
+}
+
+.kart-notifications-page__channels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-sm);
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.kart-notifications-page__channel,
+.kart-notifications-page__marketing {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--kart-spacing-sm);
+  font-size: var(--kart-font-size-caption);
+}
+
+.kart-notifications-page__channel small,
+.kart-notifications-page__marketing small {
+  display: block;
+  color: var(--kart-color-text-muted);
+}
+
+.kart-notifications-page__saved {
+  color: var(--kart-color-success);
+  font-size: var(--kart-font-size-caption);
+  margin: 0;
+}

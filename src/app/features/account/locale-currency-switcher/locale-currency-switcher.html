@@ -1,0 +1,29 @@
+<div class="kart-locale-currency-switcher">
+  <label class="kart-locale-currency-switcher__field">
+    <span class="kart-locale-currency-switcher__visually-hidden">Language</span>
+    <select
+      kartInput
+      [value]="localeService.activeLocale()"
+      (change)="changeLocale($any($event.target).value)"
+      aria-label="Language"
+    >
+      @for (locale of locales; track locale) {
+        <option [value]="locale">{{ localeLabels[locale] }}</option>
+      }
+    </select>
+  </label>
+
+  <label class="kart-locale-currency-switcher__field">
+    <span class="kart-locale-currency-switcher__visually-hidden">Currency</span>
+    <select
+      kartInput
+      [value]="currencyService.activeCurrency()"
+      (change)="changeCurrency($any($event.target).value)"
+      aria-label="Currency"
+    >
+      @for (currency of currencies; track currency) {
+        <option [value]="currency">{{ currency }}</option>
+      }
+    </select>
+  </label>
+</div>

@@ -9,6 +9,53 @@
   border-radius: var(--kart-radius-md);
 }
 
+.kart-search-bar__field {
+  position: relative;
+  flex: 1;
+  display: flex;
+}
+
+.kart-search-bar__suggestions {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background-color: var(--kart-color-surface);
+  border: 1px solid var(--kart-color-border);
+  border-radius: var(--kart-radius-md);
+  box-shadow: var(--kart-shadow-level-2);
+  list-style: none;
+  margin: 0;
+  padding: var(--kart-spacing-xs) 0;
+  z-index: 100;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.kart-search-bar__suggestions button {
+  display: flex;
+  align-items: center;
+  gap: var(--kart-spacing-sm);
+  width: 100%;
+  border: none;
+  background: none;
+  padding: var(--kart-spacing-xs) var(--kart-spacing-md);
+  cursor: pointer;
+  text-align: left;
+  color: var(--kart-color-text);
+  font-size: var(--kart-font-size-caption);
+}
+
+.kart-search-bar__suggestions button:hover {
+  background-color: var(--kart-color-background);
+}
+
+.kart-search-bar__suggestions img {
+  border-radius: var(--kart-radius-sm);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
 .kart-search-bar:focus-within {
   outline: 2px solid var(--kart-color-focus-ring);
   outline-offset: 2px;

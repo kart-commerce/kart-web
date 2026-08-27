@@ -1,0 +1,28 @@
+<section class="kart-brand-page">
+  <div class="kart-brand-page__header">
+    <h1>{{ brand() }}</h1>
+    <label class="kart-brand-page__sort">
+      Sort by
+      <select kartInput [value]="sort()" (change)="changeSort($any($event.target).value)">
+        <option value="relevance">Relevance</option>
+        <option value="price-asc">Price: low to high</option>
+        <option value="price-desc">Price: high to low</option>
+        <option value="rating">Customer rating</option>
+      </select>
+    </label>
+  </div>
+
+  @if (products(); as items) {
+    @if (items.length === 0) {
+      <p class="kart-brand-page__empty">No products from {{ brand() }} yet.</p>
+    } @else {
+      <div class="kart-brand-page__grid">
+        @for (product of items; track product.sku) {
+          <kart-product-card [product]="product" />
+        }
+      </div>
+    }
+  } @else {
+    <kart-spinner label="Loading products" />
+  }
+</section>

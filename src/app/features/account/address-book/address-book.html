@@ -1,0 +1,81 @@
+<div class="kart-address-book">
+  @if (addresses().length > 0) {
+    <ul class="kart-address-book__list">
+      @for (address of addresses(); track address.addressId) {
+        <li class="kart-address-book__item">
+          <div>
+            <strong>{{ address.type }}</strong>
+            @if (address.isDefault) {
+              <span class="kart-address-book__default">Default</span>
+            }
+            <p>
+              {{ address.line1 }}{{ address.line2 ? ', ' + address.line2 : '' }}<br />
+              {{ address.city }}@if (address.region) {, {{ address.region }}} {{ address.postalCode }}, {{ address.countryCode }}
+            </p>
+          </div>
+          <div class="kart-address-book__actions">
+            <button type="button" (click)="startEdit(address)">Edit</button>
+            <button type="button" (click)="removed.emit(address.addressId)">Remove</button>
+          </div>
+        </li>
+      }
+    </ul>
+  } @else {
+    <p>You haven't saved any addresses yet.</p>
+  }
+
+  @if (!showForm()) {
+    <kart-button variant="secondary" type="button" (click)="startAdd()">Add an address</kart-button>
+  } @else {
+    <form class="kart-address-book__form" [formGroup]="form" (ngSubmit)="submit()">
+      <kart-form-field label="Type" inputId="address-type">
+        <select kartInput id="address-type" formControlName="type">
+          @for (type of addressTypes; track type) {
+            <option [value]="type">{{ type }}</option>
+          }
+        </select>
+      </kart-form-field>
+      <kart-form-field
+        label="Address line 1"
+        inputId="address-line1"
+        [error]="form.controls.line1.touched && form.controls.line1.invalid ? 'Address is required.' : null"
+      >
+        <input kartInput id="address-line1" type="text" formControlName="line1" />
+      </kart-form-field>
+      <kart-form-field label="Address line 2 (optional)" inputId="address-line2">
+        <input kartInput id="address-line2" type="text" formControlName="line2" />
+      </kart-form-field>
+      <kart-form-field
+        label="City"
+        inputId="address-city"
+        [error]="form.controls.city.touched && form.controls.city.invalid ? 'City is required.' : null"
+      >
+        <input kartInput id="address-city" type="text" formControlName="city" />
+      </kart-form-field>
+      <kart-form-field label="State/region" inputId="address-region">
+        <input kartInput id="address-region" type="text" formControlName="region" />
+      </kart-form-field>
+      <kart-form-field
+        label="Postal code"
+        inputId="address-postal-code"
+        [error]="form.controls.postalCode.touched && form.controls.postalCode.invalid ? 'Postal code is required.' : null"
+      >
+        <input kartInput id="address-postal-code" type="text" formControlName="postalCode" />
+      </kart-form-field>
+      <kart-form-field label="Country code" inputId="address-country">
+        <input kartInput id="address-country" type="text" formControlName="countryCode" maxlength="2" />
+      </kart-form-field>
+      <kart-form-field label="Phone (optional)" inputId="address-phone">
+        <input kartInput id="address-phone" type="tel" formControlName="phone" />
+      </kart-form-field>
+      <label class="kart-address-book__default-toggle">
+        <input type="checkbox" formControlName="isDefault" />
+        Make this my default {{ form.controls.type.value | lowercase }} address
+      </label>
+      <div class="kart-address-book__form-actions">
+        <kart-button type="submit">Save address</kart-button>
+        <kart-button type="button" variant="secondary" (click)="cancel()">Cancel</kart-button>
+      </div>
+    </form>
+  }
+</div>

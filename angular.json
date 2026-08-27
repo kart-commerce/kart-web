@@ -49,7 +49,8 @@
             },
             "ssr": {
               "entry": "src/server.ts"
-            }
+            },
+            "serviceWorker": "ngsw-config.json"
           },
           "configurations": {
             "production": {
@@ -61,7 +62,7 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
+                  "maximumWarning": "6kB",
                   "maximumError": "8kB"
                 }
               ],
@@ -71,6 +72,17 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "mock": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/testing/msw-enabled.ts",
+                  "with": "src/testing/msw-enabled.mock.ts"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -82,7 +94,12 @@
               "buildTarget": "kart-web:build:production"
             },
             "development": {
-              "buildTarget": "kart-web:build:development"
+              "buildTarget": "kart-web:build:development",
+              "proxyConfig": "proxy.conf.json"
+            },
+            "mock": {
+              "buildTarget": "kart-web:build:mock",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"
@@ -91,7 +108,10 @@
           "builder": "@angular/build:unit-test",
           "options": {
             "runner": "karma",
-            "providersFile": "src/test-providers.ts"
+            "providersFile": "src/test-providers.ts",
+            "exclude": [
+              "src/server/**"
+            ]
           }
         },
         "lint": {

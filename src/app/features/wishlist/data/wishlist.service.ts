@@ -41,6 +41,13 @@ export class WishlistService {
     this.items.update((current) => current.filter((item) => item.sku !== sku));
   }
 
+  /** WEB-26: refreshes a wishlisted item's snapshotted price/stock so a re-check can detect a drop. */
+  updateSnapshot(sku: string, patch: Pick<ProductSummary, 'price' | 'listPrice' | 'inStock'>): void {
+    this.items.update((current) =>
+      current.map((item) => (item.sku === sku ? { ...item, ...patch } : item)),
+    );
+  }
+
   private readFromStorage(): readonly ProductSummary[] {
     if (!isPlatformBrowser(this.platformId)) {
       return [];

@@ -37,6 +37,8 @@ export interface ProductRating {
   readonly distribution: Readonly<Record<1 | 2 | 3 | 4 | 5, number>>;
 }
 
+export type ReviewStatus = 'published' | 'pending';
+
 export interface Review {
   readonly reviewId: string;
   readonly sku: string;
@@ -46,4 +48,13 @@ export interface Review {
   readonly body: string;
   readonly createdAt: string;
   readonly verifiedPurchase: boolean;
+  /** Moderation-aware rendering (requirement-spec.md §3.1) — a `pending` review only ever renders back to the author who submitted it, never to other visitors. */
+  readonly status: ReviewStatus;
+}
+
+export interface ReviewSubmission {
+  readonly author: string;
+  readonly rating: number;
+  readonly title: string;
+  readonly body: string;
 }

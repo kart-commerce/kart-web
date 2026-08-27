@@ -12,7 +12,12 @@ COPY package.json package-lock.json ./
 # vendor/ holds the design-system package tarball (WEB-6) — npm ci needs the
 # actual file present at install time, not just the manifests referencing it.
 COPY vendor/ ./vendor/
-RUN npm ci
+# Cache mount persists npm's downloaded-tarball cache across builds (and across kart-admin-web's
+# build, which mounts the same id) independently of the layer cache above, so even a
+# package-lock.json change that busts that layer skips re-downloading packages already fetched by
+# a previous build.
+RUN --mount=type=cache,target=/root/.npm,id=npm-cache \
+    npm ci
 
 COPY . .
 RUN npm run build

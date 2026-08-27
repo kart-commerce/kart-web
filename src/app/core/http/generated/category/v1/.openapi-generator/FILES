@@ -1,5 +1,4 @@
 .gitignore
-.openapi-generator-ignore
 README.md
 api.module.ts
 api/api.ts
@@ -8,11 +7,18 @@ configuration.ts
 encoder.ts
 git_push.sh
 index.ts
+model/attribute.ts
+model/attributeDataType.ts
+model/attributeValue.ts
+model/attributeValueInput.ts
 model/category.ts
+model/createAttributeRequest.ts
 model/createCategoryRequest.ts
 model/models.ts
 model/moveCategoryRequest.ts
 model/problem.ts
 model/renameCategoryRequest.ts
+model/reorderCategoryRequest.ts
+model/updateAttributeRequest.ts
 param.ts
 variables.ts

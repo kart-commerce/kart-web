@@ -1,0 +1,30 @@
+.kart-privacy-page {
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-lg);
+}
+
+.kart-privacy-page__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--kart-spacing-sm);
+  align-items: flex-start;
+}
+
+.kart-privacy-page__section h2 {
+  margin: 0;
+  font-size: var(--kart-font-size-heading-4);
+}
+
+.kart-privacy-page__ack {
+  display: flex;
+  align-items: center;
+  gap: var(--kart-spacing-xs);
+  font-size: var(--kart-font-size-caption);
+}
+
+.kart-privacy-page__delete-actions {
+  display: flex;
+  gap: var(--kart-spacing-sm);
+}

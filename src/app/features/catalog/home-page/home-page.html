@@ -2,14 +2,14 @@
   <div class="kart-home-hero__content">
     <h1>Everything you need, delivered fast.</h1>
     <p>Shop electronics, fashion, home essentials, and more — all in one place.</p>
-    <a class="kart-button kart-button--primary kart-home-hero__cta" routerLink="/c/electronics">Start shopping</a>
+    <a class="kart-button kart-button--primary kart-home-hero__cta" routerLink="/search">Start shopping</a>
   </div>
 </section>
 
 <section class="kart-home-section">
   <h2>Shop by category</h2>
   <div class="kart-home-categories">
-    @for (category of featuredCategories; track category.categoryId) {
+    @for (category of featuredCategories(); track category.categoryId) {
       <a class="kart-home-category" [routerLink]="['/c', category.categoryId]">
         <span class="kart-home-category__icon" aria-hidden="true">{{ category.icon }}</span>
         <span>{{ category.label }}</span>
@@ -25,4 +25,15 @@
       <kart-product-card [product]="product" />
     }
   </div>
+</section>
+
+<section class="kart-home-section">
+  <h2>Recommended for you</h2>
+  @defer (on viewport) {
+    <kart-product-recommendations />
+  } @placeholder {
+    <p class="kart-home-section__defer-placeholder">Recommendations load as you scroll…</p>
+  } @loading (minimum 200ms) {
+    <kart-spinner label="Loading recommendations" />
+  }
 </section>

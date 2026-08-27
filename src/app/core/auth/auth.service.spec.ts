@@ -97,7 +97,44 @@ describe('AuthService', () => {
     expect(service.session()).toEqual({ authenticated: false, roles: [] });
   });
 
+  it('logoutThisDevice clears the session via the this-device-only endpoint', () => {
+    service.login({ email: 'a@b.com', password: 'password123' }).subscribe();
+    httpMock
+      .expectOne('/api/bff/auth/login')
+      .flush({ status: 'authenticated', session: { authenticated: true, roles: ['customer'] } });
+
+    service.logoutThisDevice().subscribe();
+    httpMock.expectOne('/api/bff/auth/logout-this-device').flush(null);
+
+    expect(service.session()).toEqual({ authenticated: false, roles: [] });
+  });
+
   it('socialLoginUrl builds the same-origin BFF redirect path', () => {
     expect(service.socialLoginUrl('google')).toBe('/api/bff/auth/sso/social/google/login');
+  });
+
+  it('emits loginCompleted$ on a real login, but not on loadSession discovering an existing session', () => {
+    let completions = 0;
+    service.loginCompleted$.subscribe(() => completions++);
+
+    service.loadSession().subscribe();
+    httpMock.expectOne('/api/bff/session').flush({ authenticated: true, roles: ['customer'] });
+    expect(completions).toBe(0);
+
+    service.login({ email: 'a@b.com', password: 'password123' }).subscribe();
+    httpMock
+      .expectOne('/api/bff/auth/login')
+      .flush({ status: 'authenticated', session: { authenticated: true, roles: ['customer'] } });
+    expect(completions).toBe(1);
+  });
+
+  it('emits loginCompleted$ on verifyMfa success', () => {
+    let completions = 0;
+    service.loginCompleted$.subscribe(() => completions++);
+
+    service.verifyMfa({ challengeId: 'chal-1', totpCode: '123456' }).subscribe();
+    httpMock.expectOne('/api/bff/auth/mfa/verify').flush({ authenticated: true, roles: ['customer'] });
+
+    expect(completions).toBe(1);
   });
 });

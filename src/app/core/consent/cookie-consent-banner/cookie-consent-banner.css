@@ -1,0 +1,33 @@
+.kart-cookie-banner {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: var(--kart-z-index-overlay, 1000);
+  background: var(--kart-color-surface-elevated, var(--kart-color-surface));
+  border-top: 1px solid var(--kart-color-border);
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.12);
+  padding: var(--kart-spacing-lg);
+}
+
+.kart-cookie-banner__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--kart-spacing-lg);
+  max-width: 1200px;
+  margin-inline: auto;
+}
+
+.kart-cookie-banner__copy {
+  flex: 1 1 320px;
+  margin: 0;
+  font-size: var(--kart-font-size-body-sm);
+  color: var(--kart-color-text);
+}
+
+.kart-cookie-banner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--kart-spacing-sm);
+}
